@@ -1,0 +1,118 @@
+name: CI
+
+# Source check runs on every push (Linux, cheap).
+# The macOS job is manual only: private-repo macOS minutes count 10x.
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      unit_tests:
+        description: Run unit tests
+        type: boolean
+        default: true
+      ui_tests:
+        description: Run UI tests (slow)
+        type: boolean
+        default: false
+      ipa:
+        description: Build unsigned IPA for sideloading
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  # Separate groups so a push never cancels a manual macOS run
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-source.mjs
+
+  ios:
+    if: github.event_name == 'workflow_dispatch'
+    needs: source-check
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i ios
+
+      - name: Pick iPhone simulator
+        run: |
+          # Newest iOS runtime, then an iPhone within it
+          UDID=$(xcrun simctl list devices available -j | jq -r '
+            [.devices | to_entries[] | select(.key | test("iOS-[0-9]"))
+             | select([.value[] | select(.name | startswith("iPhone"))] | length > 0)]
+            | sort_by(.key | capture("iOS-(?<a>[0-9]+)-(?<b>[0-9]+)") | [(.a|tonumber), (.b|tonumber)])
+            | last | [.value[] | select(.name | startswith("iPhone"))] | last | .udid')
+          test -n "$UDID" && test "$UDID" != null
+          xcrun simctl list devices available | grep "$UDID"
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Unit tests
+        if: inputs.unit_tests
+        run: |
+          set -o pipefail
+          xcodebuild -project MNetBox.xcodeproj -scheme MNetBox \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -parallel-testing-enabled NO -only-testing:MNetBoxTests \
+            -resultBundlePath build/UnitTests.xcresult \
+            test 2>&1 | tee build-unit.log | grep -E "error:|warning:|Test Suite|Executed|\*\* (TEST|BUILD)"
+
+      - name: UI tests
+        if: inputs.ui_tests
+        run: |
+          set -o pipefail
+          xcodebuild -project MNetBox.xcodeproj -scheme MNetBox \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -parallel-testing-enabled NO -only-testing:MNetBoxUITests \
+            -resultBundlePath build/UITests.xcresult \
+            test 2>&1 | tee build-ui.log | grep -E "error:|warning:|Test Suite|Executed|\*\* (TEST|BUILD)"
+
+      - name: Unsigned IPA
+        if: inputs.ipa
+        run: |
+          set -o pipefail
+          xcodebuild -project MNetBox.xcodeproj -scheme MNetBox \
+            -configuration Release -sdk iphoneos -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build-ipa.log | grep -E "error:|warning:|\*\* BUILD"
+          mkdir -p build/Payload
+          cp -R build/dd/Build/Products/Release-iphoneos/MNetBox.app build/Payload/
+          (cd build && zip -qry MNetBox-unsigned.ipa Payload)
+
+      - name: Upload logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results
+          path: |
+            build-*.log
+            build/*.xcresult
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload IPA
+        if: inputs.ipa && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MNetBox-unsigned-ipa
+          path: build/MNetBox-unsigned.ipa
+          retention-days: 7

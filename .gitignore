@@ -1,0 +1,21 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcresult
+*.xcarchive
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Local leak-check word list
+.private-words

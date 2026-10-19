@@ -71,6 +71,7 @@ jobs:
           echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
 
       - name: Unit tests
+        id: unit
         if: inputs.unit_tests
         run: |
           set -o pipefail
@@ -81,6 +82,7 @@ jobs:
             test 2>&1 | tee build-unit.log | grep -E "error:|warning:|Test Suite|Executed|\*\* (TEST|BUILD)"
 
       - name: UI tests
+        id: ui
         if: inputs.ui_tests
         env:
           UI_FILTER: ${{ inputs.ui_filter }}
@@ -101,7 +103,9 @@ jobs:
             test 2>&1 | tee build-ui.log | grep -E "error:|warning:|Test Suite|Test Case .*(passed|failed)|Executed|\*\* (TEST|BUILD)"
 
       - name: Unsigned IPA
-        if: inputs.ipa
+        id: ipa
+        # Still built when only UI tests failed; never after a unit-test failure.
+        if: inputs.ipa && !cancelled() && steps.unit.outcome != 'failure'
         run: |
           set -o pipefail
           xcodebuild -project MNetBox.xcodeproj -scheme MNetBox \
@@ -124,7 +128,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload IPA
-        if: inputs.ipa && success()
+        if: steps.ipa.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: MNetBox-unsigned-ipa

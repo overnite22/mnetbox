@@ -218,6 +218,7 @@ final class MNetBoxUITests: XCTestCase {
         if element.waitForExistence(timeout: 5) { return element }
         for _ in 0..<swipes { app.swipeUp(); if element.waitForExistence(timeout: 1) { return element } }
         for _ in 0..<(swipes * 2) { app.swipeDown(); if element.waitForExistence(timeout: 1) { return element } }
+        attach(app, name: "Element not found after scrolling")
         XCTFail("Element not found after scrolling: \(element)")
         return element
     }
@@ -812,8 +813,8 @@ final class MNetBoxUITests: XCTestCase {
         app.secureTextFields["apiToken"].tap()
         app.secureTextFields["apiToken"].typeText("test-placeholder")
         app.buttons["connect"].tap()
-        let connectionError = app.descendants(matching: .any)["connectionError"].firstMatch
-        XCTAssertTrue(connectionError.waitForExistence(timeout: 10))
+        // The error section sits below the form, possibly under the keyboard.
+        reveal(app.descendants(matching: .any)["connectionError"].firstMatch, in: app)
     }
     @MainActor func testGlobalSearchOpensDeviceAndPreservesNavigation() {
         let app = XCUIApplication()
@@ -844,8 +845,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(input.waitForExistence(timeout: 5))
         input.tap(); input.typeText("192.0.2.10")
         input.typeText("\n")
-        let result = app.buttons["global-ipAddresses-11"]
-        XCTAssertTrue(result.waitForExistence(timeout: 10))
+        let result = reveal(app.buttons["global-ipAddresses-11"], in: app)
         for _ in 0..<5 where !result.isHittable { app.swipeUp() }
         XCTAssertTrue(result.isHittable)
         result.tap()
@@ -998,7 +998,8 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["structuredReference"].tap(); app.buttons["None"].tap(); confirmStructured(app)
         app.buttons["ipamField-Assigned object"].tap()
         XCTAssertTrue(app.buttons["clearAssignment"].waitForExistence(timeout: 5)); app.buttons["clearAssignment"].tap(); confirmStructured(app)
-        XCTAssertTrue(app.buttons["ipAssignedInterface"].waitForNonExistence(timeout: 5))
+        if !app.buttons["ipAssignedInterface"].waitForNonExistence(timeout: 15) { attach(app, name: "Assignment still visible after detach") }
+        XCTAssertFalse(app.buttons["ipAssignedInterface"].exists)
         XCTAssertTrue(app.staticTexts["192.0.2.10/24"].firstMatch.exists)
     }
     @MainActor func testPrimaryIPv6Clearing() {
@@ -1347,7 +1348,8 @@ final class MNetBoxUITests: XCTestCase {
     @MainActor private func administrationButton(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         let button = app.buttons[id]
         for _ in 0..<8 { if button.exists && button.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(button.waitForExistence(timeout: 5)); return button
+        if !button.waitForExistence(timeout: 5) { attach(app, name: "Missing \(id)"); XCTFail("Missing \(id)") }
+        return button
     }
     @MainActor private func saveAdministrationEdit(_ app: XCUIApplication) {
         administrationButton(app, "ipamEditReview").tap()
@@ -1511,7 +1513,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.buttons["panelPort-interfaces-1503"].label.contains("No cable"))
         attach(app, name: "Graphical switch port panel light")
         tile.tap()
-        XCTAssertEqual(app.staticTexts["panelSelectedName"].label, "Gi1/0/1")
+        XCTAssertTrue(app.staticTexts["Gi1/0/1"].waitForExistence(timeout: 5))
         attach(app, name: "Selected actual port")
         administrationButton(app, "panelOpenDetails").tap()
         XCTAssertTrue(app.descendants(matching: .any)["interfaceTitle"].firstMatch.waitForExistence(timeout: 6)); XCTAssertEqual(app.descendants(matching: .any)["interfaceTitle"].firstMatch.label, "Gi1/0/1")

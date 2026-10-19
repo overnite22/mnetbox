@@ -75,7 +75,7 @@ struct IPAMCreateView: View {
                     Section {
                         Label("Object created", systemImage: "checkmark.circle").accessibilityIdentifier("ipamCreated")
                         Text(object.title).monospaced()
-                        Text("#\(object.id)")
+                        Text(verbatim: "#\(object.id)")
                         NavigationLink("Open created object") {
                             IPAMDetailView(service: IPAMService(client: model.client, kind: model.draft.kind), id: object.id)
                         }.accessibilityIdentifier("openCreatedIPAM")

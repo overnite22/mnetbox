@@ -86,7 +86,7 @@ struct NetworkCreateView: View {
                     Text(model.client.serverDisplay).font(.caption)
                     if let interface = model.interface {
                         Text(interface.title)
-                        Text("#\(interface.id) · \(interface.kind.parentKind.singular) #\(interface.parentID ?? 0)").font(.caption)
+                        Text(verbatim: "#\(interface.id) · \(interface.kind.parentKind.singular) #\(interface.parentID ?? 0)").font(.caption)
                     }
                 }
                 if let error = model.errorMessage { StatusMessage(message: error) }

@@ -166,7 +166,7 @@ struct CableDetailView: View {
             }
             if let cable = model.object {
                 Section("Overview") {
-                    Label(cable.label?.isEmpty == false ? (cable.label ?? "") : cable.display ?? L10n.format("Cable #%ld", cable.id), systemImage: "cable.connector")
+                    Label(cable.label?.isEmpty == false ? (cable.label ?? "") : cable.display ?? L10n.identifier("Cable #%ld", cable.id), systemImage: "cable.connector")
                         .font(.title3.bold()).accessibilityIdentifier("cableTitle")
                     DetailField(title: "Status", value: cable.status?.text ?? "—")
                     DetailField(title: "Type", value: cable.type ?? "—")

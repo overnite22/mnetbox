@@ -69,7 +69,7 @@ struct VLANEditView: View {
                 Section("Target") {
                     Text(model.client.serverDisplay).font(.caption)
                     Text(model.snapshot?.object.name ?? "—").bold()
-                    Text("#\(model.target.id)")
+                    Text(verbatim: "#\(model.target.id)")
                     DetailField(title: "Parent ID", value: model.target.parentID.map(String.init) ?? "—")
                 }
                 if model.isLoading || model.isSaving { ProgressView("Loading…") }

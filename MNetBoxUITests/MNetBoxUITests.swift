@@ -161,7 +161,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.buttons["vlanObject-vlans-24"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["vlanObject-vlans-22"].exists)
         app.swipeUp(); app.buttons["vlanObject-vlans-24"].tap()
-        XCTAssertTrue(app.buttons["vlanGroup"].waitForExistence(timeout: 5))
+        reveal(app.buttons["vlanGroup"], in: app)
         app.buttons["vlanGroup"].tap()
         XCTAssertTrue(app.staticTexts["vlanDetailTitle"].waitForExistence(timeout: 5))
     }
@@ -212,6 +212,16 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["interfaceTitle"].label, "eth2")
     }
 
+    /// Detail screens open with graphic headers and image galleries, so lists are lazily
+    /// populated: scroll down, then back up, until the element is materialized.
+    @MainActor @discardableResult private func reveal(_ element: XCUIElement, in app: XCUIApplication, swipes: Int = 6) -> XCUIElement {
+        if element.waitForExistence(timeout: 5) { return element }
+        for _ in 0..<swipes { app.swipeUp(); if element.waitForExistence(timeout: 1) { return element } }
+        for _ in 0..<(swipes * 2) { app.swipeDown(); if element.waitForExistence(timeout: 1) { return element } }
+        XCTFail("Element not found after scrolling: \(element)")
+        return element
+    }
+
     @MainActor private func openInventory(_ kind: String, id: Int) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard"]
@@ -251,17 +261,16 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["descriptionConfirm"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["descriptionSaved"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         app.swipeUp()
-        let description = app.buttons["inventoryField-Description"]
-        XCTAssertTrue(description.waitForExistence(timeout: 5))
+        let description = reveal(app.buttons["inventoryField-Description"], in: app)
         XCTAssertTrue((description.value as? String)?.contains("mobile-test") == true)
     }
 
     @MainActor func testDescriptionCancelLeavesServerValueUnchanged() {
         let app = prepareDescriptionEdit()
         app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         app.buttons["editObject"].tap()
         app.buttons["editDescription"].tap()
         let draft = app.descendants(matching: .any)["descriptionDraft"].firstMatch
@@ -334,7 +343,7 @@ final class MNetBoxUITests: XCTestCase {
         search.tap(); search.typeText("203.0.113.0/24")
         XCTAssertTrue(app.buttons["ipamObject-9001"].waitForExistence(timeout: 5))
         app.buttons["ipamObject-9001"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "203.0.113.0/24")
     }
     @MainActor func testCreateIPv6IPWithVRFTenantAndDNS() {
@@ -356,7 +365,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["confirmIPAMCreation"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["ipamCreated"].waitForExistence(timeout: 5))
         app.buttons["openCreatedIPAM"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "2001:db8:beef::42/64")
         app.swipeUp()
         XCTAssertEqual(app.buttons["ipamDNSName"].value as? String, "host.example.test")
@@ -394,7 +403,7 @@ final class MNetBoxUITests: XCTestCase {
         }
         XCTAssertNotNil(visible)
         visible?.tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "192.0.2.0/24")
         XCTAssertFalse(app.buttons["createIPAM"].isHittable)
     }
@@ -410,18 +419,18 @@ final class MNetBoxUITests: XCTestCase {
         existing.tap()
         XCTAssertTrue(app.buttons["ipamObject-9001"].waitForExistence(timeout: 5))
         app.buttons["ipamObject-9001"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "203.0.113.0/24")
     }
 
     @MainActor func testBottomNavigationAcrossDeepDetailsAndReturnHome() {
         let app = openInventory("sites", id: 101)
         app.buttons["inventoryObject-101"].tap()
-        XCTAssertTrue(app.buttons["related-racks"].waitForExistence(timeout: 5))
+        reveal(app.buttons["related-racks"], in: app)
         app.buttons["related-racks"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-201"].waitForExistence(timeout: 5))
         app.buttons["inventoryObject-201"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.buttons["Inventory"].exists)
         tabs.buttons["IPAM"].tap()
@@ -429,22 +438,22 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["ipamCategory-ipAddresses"].tap()
         XCTAssertTrue(app.buttons["ipamObject-11"].waitForExistence(timeout: 5))
         app.buttons["ipamObject-11"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         tabs.buttons["Inventory"].tap()
         XCTAssertTrue(app.buttons["inventoryCategory-devices"].waitForExistence(timeout: 5))
         app.buttons["inventoryCategory-devices"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-301"].waitForExistence(timeout: 5))
         app.buttons["inventoryObject-301"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         tabs.buttons["IPAM"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "192.0.2.10/24")
         tabs.buttons["Home"].tap()
         XCTAssertTrue(app.buttons["browse-sites"].waitForExistence(timeout: 5))
         app.buttons["browse-sites"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-101"].waitForExistence(timeout: 5))
         app.buttons["inventoryObject-101"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         tabs.buttons["Home"].tap()
         XCTAssertTrue(app.buttons["browse-sites"].waitForExistence(timeout: 5))
         attach(app, name: "Bottom navigation home")
@@ -503,7 +512,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["dns_nameConfirm"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["dns_nameSaved"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "192.0.2.10/24")
         app.swipeUp()
         XCTAssertEqual(app.buttons["ipamDNSName"].value as? String, "new.example.test")
@@ -526,7 +535,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["browse-sites"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-101"].waitForExistence(timeout: 5))
         app.buttons["inventoryObject-101"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertTrue(app.buttons["editObject"].exists)
         app.swipeUp()
         attach(app, name: "French large-text dark site detail")
@@ -548,7 +557,7 @@ final class MNetBoxUITests: XCTestCase {
     @MainActor func testDeviceInterfacesCableAndAssignedIP() {
         let app = openInventory("devices", id: 301)
         app.buttons["inventoryObject-301"].tap()
-        XCTAssertTrue(app.buttons["related-interfaces"].waitForExistence(timeout: 5))
+        reveal(app.buttons["related-interfaces"], in: app)
         app.buttons["related-interfaces"].tap()
         XCTAssertTrue(app.buttons["interface-501"].waitForExistence(timeout: 5))
         app.buttons["interfaceLoadMore"].tap()
@@ -574,7 +583,7 @@ final class MNetBoxUITests: XCTestCase {
     @MainActor func testVMInterfacesAndIPv6Assignment() {
         let app = openInventory("virtualMachines", id: 401)
         app.buttons["inventoryObject-401"].tap()
-        XCTAssertTrue(app.buttons["related-interfaces"].waitForExistence(timeout: 5))
+        reveal(app.buttons["related-interfaces"], in: app)
         app.buttons["related-interfaces"].tap()
         XCTAssertTrue(app.buttons["interface-801"].waitForExistence(timeout: 5))
         app.buttons["interface-801"].tap()
@@ -587,7 +596,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.buttons["ipAssignedInterface"].waitForExistence(timeout: 5)); app.buttons["ipAssignedInterface"].tap()
         XCTAssertTrue(app.buttons["interfaceParent"].waitForExistence(timeout: 5))
         app.buttons["interfaceParent"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "monitoring-01")
     }
 
@@ -630,17 +639,17 @@ final class MNetBoxUITests: XCTestCase {
     @MainActor func testSiteLinkedRacksAndEquipment() {
         let app = openInventory("sites", id: 101)
         app.buttons["inventoryObject-101"].tap()
-        XCTAssertTrue(app.buttons["related-racks"].waitForExistence(timeout: 5))
+        reveal(app.buttons["related-racks"], in: app)
         app.buttons["related-racks"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-201"].waitForExistence(timeout: 5))
         attach(app, name: "Site racks with illustrations")
         app.buttons["inventoryObject-201"].tap()
-        XCTAssertTrue(app.buttons["related-devices"].waitForExistence(timeout: 5))
+        reveal(app.buttons["related-devices"], in: app)
         app.buttons["related-devices"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-301"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["inventoryObject-302"].exists)
         app.buttons["inventoryObject-301"].tap()
-        XCTAssertTrue(app.buttons["parent-racks"].waitForExistence(timeout: 5))
+        reveal(app.buttons["parent-racks"], in: app)
         app.buttons["parent-racks"].tap()
         XCTAssertTrue(app.buttons["rackElevation"].waitForExistence(timeout: 5))
     }
@@ -660,7 +669,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["refreshRackElevation"].tap()
         XCTAssertTrue(device.waitForExistence(timeout: 5))
         device.tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "Core-switch")
     }
 
@@ -669,7 +678,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["inventoryLoadMore"].tap()
         XCTAssertTrue(app.buttons["inventoryObject-103"].waitForExistence(timeout: 5))
         app.buttons["inventoryObject-101"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "Example Paris")
         attach(app, name: "Site detail")
     }
@@ -678,7 +687,7 @@ final class MNetBoxUITests: XCTestCase {
         let app = openInventory("racks", id: 201)
         attach(app, name: "Rack list")
         app.buttons["inventoryObject-201"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "Rack-A")
         app.swipeUp()
         let height = app.descendants(matching: .any)["inventoryField-Height (U)"]
@@ -693,7 +702,7 @@ final class MNetBoxUITests: XCTestCase {
         search.typeText("Core")
         XCTAssertTrue(app.buttons["inventoryObject-302"].waitForNonExistence(timeout: 5))
         app.buttons["inventoryObject-301"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "Core-switch")
         attach(app, name: "Device detail")
     }
@@ -701,10 +710,10 @@ final class MNetBoxUITests: XCTestCase {
     @MainActor func testVirtualMachinesDetailAndRefresh() {
         let app = openInventory("virtualMachines", id: 401)
         app.buttons["inventoryObject-401"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "monitoring-01")
         app.buttons["refreshInventoryDetail"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         app.swipeUp()
         let cpu = app.descendants(matching: .any)["inventoryField-vCPUs"]
         XCTAssertTrue(cpu.waitForExistence(timeout: 5))
@@ -726,7 +735,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["ipamLoadMore"].tap()
         XCTAssertTrue(app.buttons["ipamObject-3"].waitForExistence(timeout: 5))
         app.buttons["ipamObject-1"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "192.0.2.0/24")
         if !app.staticTexts["Documentation LAN"].exists { app.swipeUp() }
         XCTAssertTrue(app.staticTexts["Documentation LAN"].waitForExistence(timeout: 5))
@@ -749,7 +758,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.buttons["ipamObject-12"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["ipamObject-11"].waitForExistence(timeout: 5))
         app.buttons["ipamObject-11"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "192.0.2.10/24")
         app.swipeUp()
         let dns = app.buttons["ipamDNSName"]
@@ -803,7 +812,8 @@ final class MNetBoxUITests: XCTestCase {
         app.secureTextFields["apiToken"].tap()
         app.secureTextFields["apiToken"].typeText("test-placeholder")
         app.buttons["connect"].tap()
-        XCTAssertTrue(app.otherElements["connectionError"].exists || app.staticTexts["connectionError"].exists)
+        let connectionError = app.descendants(matching: .any)["connectionError"].firstMatch
+        XCTAssertTrue(connectionError.waitForExistence(timeout: 10))
     }
     @MainActor func testGlobalSearchOpensDeviceAndPreservesNavigation() {
         let app = XCUIApplication()
@@ -816,10 +826,10 @@ final class MNetBoxUITests: XCTestCase {
         let result = app.buttons["global-devices-301"]
         XCTAssertTrue(result.waitForExistence(timeout: 10))
         result.tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         app.tabBars.firstMatch.buttons["Home"].tap()
         app.tabBars.firstMatch.buttons["Search"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         app.tabBars.firstMatch.buttons["Search"].tap()
         XCTAssertTrue(input.waitForExistence(timeout: 5))
         XCTAssertEqual(input.value as? String, "Search all NetBox")
@@ -839,7 +849,7 @@ final class MNetBoxUITests: XCTestCase {
         for _ in 0..<5 where !result.isHittable { app.swipeUp() }
         XCTAssertTrue(result.isHittable)
         result.tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
     }
     @MainActor func testDeviceNameReviewSaveAndCancel() {
         let app = openInventory("devices", id: 301)
@@ -861,7 +871,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["nameConfirm"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["nameSaved"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
-        XCTAssertTrue(app.staticTexts["inventoryDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
         XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "core-mobile")
         app.buttons["editObject"].tap(); app.buttons["editName"].tap()
         XCTAssertTrue(draft.waitForExistence(timeout: 5))
@@ -1076,7 +1086,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["deletionBlocked"].firstMatch.waitForExistence(timeout: 8))
         XCTAssertFalse(app.buttons["confirmDeletion"].exists)
         app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5))
+        reveal(app.staticTexts["ipamDetailTitle"], in: app)
     }
     @MainActor func testDeleteUncertainOutcomeOnlyOffersReadCheck() {
         let app = openNewPrefixForDeletion(argument: "--ui-testing-delete-uncertain")
@@ -1119,7 +1129,8 @@ final class MNetBoxUITests: XCTestCase {
         app.launch()
         let badge = app.descendants(matching: .any)["appVersion"].firstMatch
         XCTAssertTrue(badge.waitForExistence(timeout: 5))
-        XCTAssertEqual(badge.value as? String, "MNetBox 0.10.0 · Build 25")
+        let version = badge.value as? String ?? ""
+        XCTAssertNotNil(version.range(of: #"^MNetBox \d+\.\d+\.\d+ · Build \d+$"#, options: .regularExpression), version)
     }
     @MainActor func testPhysicalInterfaceNameDescriptionAndTypeReviewSave() {
         let app = openEditableInterface()
@@ -1170,14 +1181,13 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "This IP is a primary address.")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["structuredConfirm"].exists)
         app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.buttons["ipAssignedInterface"].waitForExistence(timeout: 5))
+        reveal(app.buttons["ipAssignedInterface"], in: app)
     }
     @MainActor func testDirectDeviceNameEditCancel() {
         let app = openInventory("devices", id: 301); app.buttons["inventoryObject-301"].tap()
-        let name = app.buttons["inventoryField-Name"]
-        XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap()
+        let name = reveal(app.buttons["inventoryField-Name"], in: app); name.tap()
         XCTAssertTrue(app.navigationBars.buttons["Cancel"].waitForExistence(timeout: 5)); app.navigationBars.buttons["Cancel"].tap()
-        XCTAssertEqual(app.staticTexts["inventoryDetailTitle"].label, "Core-switch")
+        XCTAssertEqual(reveal(app.staticTexts["inventoryDetailTitle"], in: app).label, "Core-switch")
     }
     @MainActor func testPhysicalVLANScopedSelectionsReviewAndModeClearing() {
         let app = openEditableInterface()
@@ -1365,7 +1375,7 @@ final class MNetBoxUITests: XCTestCase {
         let draft = app.textFields["ipamCIDRDraft"]; XCTAssertTrue(draft.waitForExistence(timeout: 5)); draft.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         draft.typeText(XCUIKeyboardKey.delete.rawValue); draft.typeText("203.0.113.100/32"); app.navigationBars.buttons["Done"].tap()
         saveAdministrationEdit(app)
-        XCTAssertTrue(app.staticTexts["ipamDetailTitle"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "203.0.113.100/32")
+        reveal(app.staticTexts["ipamDetailTitle"], in: app); XCTAssertEqual(app.staticTexts["ipamDetailTitle"].label, "203.0.113.100/32")
         administrationButton(app, "ipamField-VRF").tap(); app.buttons["ipamEditReference"].tap()
         XCTAssertTrue(app.buttons["reference-7"].waitForExistence(timeout: 5)); app.buttons["reference-7"].tap(); saveAdministrationEdit(app)
         waitForNetworkValue(app.buttons["ipamField-VRF"], "Blue")

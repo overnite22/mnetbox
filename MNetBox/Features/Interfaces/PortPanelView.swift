@@ -190,13 +190,13 @@ struct PortPanelView: View {
                 if let port = shown.first(where: { $0.id == selectedID }) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Image(systemName: port.state.symbol).foregroundStyle(port.state.color)
+                            Image(systemName: port.state.symbol).foregroundStyle(port.state.color).accessibilityHidden(true)
                             Text(port.name).font(.headline).accessibilityIdentifier("panelSelectedName")
                             Spacer()
                             Text(port.state.title).font(.caption).foregroundStyle(port.state.color)
                         }
                         if let type = port.type { Text(type.text).font(.subheadline).foregroundStyle(.secondary) }
-                        if let cableID = port.cable?.id { Label(L10n.format("Cable #%ld", cableID), systemImage: "link").font(.subheadline) }
+                        if let cableID = port.cable?.id { Label(L10n.identifier("Cable #%ld", cableID), systemImage: "link").font(.subheadline) }
                         Divider()
                         if onSelect != nil {
                             Button("Choose this port") { onSelect?(endpoint(port)); dismiss() }.buttonStyle(.borderedProminent).disabled(!selectable(port)).accessibilityIdentifier("chooseCablePort")

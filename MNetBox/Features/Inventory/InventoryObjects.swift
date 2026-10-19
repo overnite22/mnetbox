@@ -87,7 +87,7 @@ struct InventoryObject: Codable, Sendable, Identifiable {
     var title: String {
         if let name, !name.isEmpty { return name }
         if let display, !display.isEmpty { return display }
-        return L10n.format("Object #%ld", id)
+        return L10n.identifier("Object #%ld", id)
     }
     var subtitle: String { site?.text ?? cluster?.text ?? region?.text ?? "" }
     enum CodingKeys: String, CodingKey {

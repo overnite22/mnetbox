@@ -51,7 +51,7 @@ struct InterfaceCreateView: View {
             Form {
                 Section("Target") {
                     Text(model.client.serverDisplay).font(.caption)
-                    Text(L10n.format("Parent #%ld", model.draft.parentID))
+                    Text(L10n.identifier("Parent #%ld", model.draft.parentID))
                     Text(model.draft.kind.parentKind.title)
                 }
                 if let error = model.errorMessage { StatusMessage(message: error) }
@@ -102,7 +102,7 @@ struct InterfaceCreateView: View {
                 }
                 if model.errorMessage != nil && !model.working {
                     NavigationLink("Check existing objects") {
-                        InterfaceListView(service: InterfaceService(client: model.client, kind: model.draft.kind, parentID: model.draft.parentID), title: L10n.format("Parent #%ld", model.draft.parentID), allowsCreation: false)
+                        InterfaceListView(service: InterfaceService(client: model.client, kind: model.draft.kind, parentID: model.draft.parentID), title: L10n.identifier("Parent #%ld", model.draft.parentID), allowsCreation: false)
                     }
                 }
                 if model.working { ProgressView("Loading…") }

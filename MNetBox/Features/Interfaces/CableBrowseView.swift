@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CableObject {
-    var title: String { label?.isEmpty == false ? label ?? "" : display ?? L10n.format("Cable #%ld", id) }
+    var title: String { label?.isEmpty == false ? label ?? "" : display ?? L10n.identifier("Cable #%ld", id) }
     func validate() throws {
         guard id > 0, let aTerminations, let bTerminations else { throw APIError.invalidResponse }
         for side in [aTerminations, bTerminations] {
@@ -99,7 +99,7 @@ struct CableDiagram: View {
         VStack(alignment: .leading, spacing: 6) {
             Label(value.object?.title ?? "#\(value.objectID)", systemImage: value.objectType == "dcim.interface" ? "network" : "point.3.connected.trianglepath.dotted")
             if let device = value.object?.device { Text(device.text).font(.caption).foregroundStyle(.secondary) }
-            Text("\(value.objectType) · #\(value.objectID)").font(.caption2).foregroundStyle(.secondary)
+            Text(verbatim: "\(value.objectType) · #\(value.objectID)").font(.caption2).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(12).background(.tint.opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
     }
     private func side(_ title: String, values: [CableTermination]) -> some View {

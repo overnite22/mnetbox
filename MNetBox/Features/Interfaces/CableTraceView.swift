@@ -104,7 +104,7 @@ struct CableTraceView: View {
                         endpoints(trace.segments[index].near, color: .blue)
                         if let cable = trace.segments[index].cable {
                             NavigationLink { CableDetailView(client: client, id: cable.id) } label: {
-                                Label(cable.label?.isEmpty == false ? cable.label ?? "" : L10n.format("Cable #%ld", cable.id), systemImage: "cable.connector").font(.headline).foregroundStyle(.orange)
+                                Label(cable.label?.isEmpty == false ? cable.label ?? "" : L10n.identifier("Cable #%ld", cable.id), systemImage: "cable.connector").font(.headline).foregroundStyle(.orange)
                             }.accessibilityIdentifier("traceCable-\(cable.id)")
                             if let status = cable.status { DetailField(title: "Status", value: status.text) }
                         } else { Label(trace.segments[index].far.isEmpty ? "No visible cable" : "Internal port connection", systemImage: "arrow.down").foregroundStyle(.secondary) }

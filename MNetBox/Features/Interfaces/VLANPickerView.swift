@@ -35,7 +35,7 @@ struct VLANPickerView: View {
         List {
             if let siteID {
                 Picker("Scope", selection: $global) {
-                    Text(L10n.format("Parent site #%ld", siteID)).tag(false)
+                    Text(L10n.identifier("Parent site #%ld", siteID)).tag(false)
                     Text("Global").tag(true)
                 }.pickerStyle(.segmented).accessibilityIdentifier("vlanScope")
             } else { Text("Global VLANs only: this parent has no site.").font(.caption) }

@@ -112,8 +112,8 @@ struct StructuredEditView: View {
                 Section("Target") {
                     Text(model.client.serverDisplay).font(.caption)
                     Text(model.snapshot?.object.title ?? "#\(model.target.id)").font(.headline)
-                    Text("#\(model.target.id)").font(.caption)
-                    if let parentID = model.target.parentID { Text(L10n.format("Parent #%ld", parentID)).font(.caption) }
+                    Text(verbatim: "#\(model.target.id)").font(.caption)
+                    if let parentID = model.target.parentID { Text(L10n.identifier("Parent #%ld", parentID)).font(.caption) }
                 }
                 if model.isLoading { ProgressView("Loading…") }
                 if let error = model.errorMessage { StatusMessage(message: error) }

@@ -69,7 +69,7 @@ struct TextEditView: View {
                 Section("Target") {
                     Text(server).font(.caption).textSelection(.enabled)
                     if let snapshot = model.snapshot { Text(snapshot.object.title).font(.headline) }
-                    Text("#\(model.target.id)").font(.caption)
+                    Text(verbatim: "#\(model.target.id)").font(.caption)
                 }
                 if model.isLoading { ProgressView("Loading…") }
                 if let message = model.errorMessage { Section { StatusMessage(message: message) } }

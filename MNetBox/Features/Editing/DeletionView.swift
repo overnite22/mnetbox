@@ -57,15 +57,15 @@ struct DeletionView: View {
                 Section("Target") {
                     Text(model.client.serverDisplay).font(.caption)
                     Text(model.snapshot?.object.title ?? "#\(model.target.id)").font(.headline).textSelection(.enabled)
-                    Text("#\(model.target.id)")
+                    Text(verbatim: "#\(model.target.id)")
                     Text(L10n.text(model.target.collection.titleKey))
                     if let parent = model.target.imageParent {
                         Text(parent.kind.singular + " · " + (model.snapshot?.imageParentTitle ?? "#\(parent.id)"))
-                        Text(L10n.format("Parent #%ld", parent.id)).font(.caption)
+                        Text(L10n.identifier("Parent #%ld", parent.id)).font(.caption)
                     }
                     if let kind = model.target.collection.interfaceKind, let parent = model.snapshot?.object.parent {
                         Text(kind.parentKind.singular + " · " + parent.text)
-                        Text(L10n.format("Parent #%ld", parent.id ?? 0)).font(.caption)
+                        Text(L10n.identifier("Parent #%ld", parent.id ?? 0)).font(.caption)
                     }
                     if model.target.collection == .prefixes || model.target.collection == .ipAddresses {
                         DetailField(title: "VRF", value: model.snapshot?.object.vrf?.text ?? L10n.text("Global VRF"))

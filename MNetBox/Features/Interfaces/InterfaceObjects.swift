@@ -60,7 +60,7 @@ struct InterfacePeer: Codable, Sendable, Identifiable {
     let name: String?
     let device: NetBoxLabel?
     let virtualMachine: NetBoxLabel?
-    var title: String { display ?? name ?? L10n.format("Endpoint #%ld", id) }
+    var title: String { display ?? name ?? L10n.identifier("Endpoint #%ld", id) }
     enum CodingKeys: String, CodingKey { case id, display, name, device; case virtualMachine = "virtual_machine" }
 }
 

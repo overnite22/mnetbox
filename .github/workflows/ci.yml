@@ -14,6 +14,10 @@ on:
         description: Run UI tests (slow)
         type: boolean
         default: false
+      ui_filter:
+        description: Only these UI test methods (space-separated, empty = all)
+        type: string
+        default: ""
       ipa:
         description: Build unsigned IPA for sideloading
         type: boolean
@@ -78,13 +82,23 @@ jobs:
 
       - name: UI tests
         if: inputs.ui_tests
+        env:
+          UI_FILTER: ${{ inputs.ui_filter }}
         run: |
           set -o pipefail
+          ONLY=(-only-testing:MNetBoxUITests)
+          if [ -n "$UI_FILTER" ]; then
+            ONLY=()
+            for name in $UI_FILTER; do
+              [[ "$name" =~ ^test[A-Za-z0-9_]+$ ]] || { echo "Invalid test name: $name"; exit 1; }
+              ONLY+=("-only-testing:MNetBoxUITests/MNetBoxUITests/$name")
+            done
+          fi
           xcodebuild -project MNetBox.xcodeproj -scheme MNetBox \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
-            -parallel-testing-enabled NO -only-testing:MNetBoxUITests \
+            -parallel-testing-enabled NO "${ONLY[@]}" \
             -resultBundlePath build/UITests.xcresult \
-            test 2>&1 | tee build-ui.log | grep -E "error:|warning:|Test Suite|Executed|\*\* (TEST|BUILD)"
+            test 2>&1 | tee build-ui.log | grep -E "error:|warning:|Test Suite|Test Case .*(passed|failed)|Executed|\*\* (TEST|BUILD)"
 
       - name: Unsigned IPA
         if: inputs.ipa

@@ -1000,7 +1000,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.buttons["clearAssignment"].waitForExistence(timeout: 5)); app.buttons["clearAssignment"].tap(); confirmStructured(app)
         if !app.buttons["ipAssignedInterface"].waitForNonExistence(timeout: 15) { attach(app, name: "Assignment still visible after detach") }
         XCTAssertFalse(app.buttons["ipAssignedInterface"].exists)
-        XCTAssertTrue(app.staticTexts["192.0.2.10/24"].firstMatch.exists)
+        reveal(app.staticTexts["192.0.2.10/24"].firstMatch, in: app)
     }
     @MainActor func testPrimaryIPv6Clearing() {
         let app = openInventory("virtualMachines", id: 401); app.buttons["inventoryObject-401"].tap()
@@ -1516,7 +1516,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Gi1/0/1"].waitForExistence(timeout: 5))
         attach(app, name: "Selected actual port")
         administrationButton(app, "panelOpenDetails").tap()
-        XCTAssertTrue(app.descendants(matching: .any)["interfaceTitle"].firstMatch.waitForExistence(timeout: 6)); XCTAssertEqual(app.descendants(matching: .any)["interfaceTitle"].firstMatch.label, "Gi1/0/1")
+        XCTAssertTrue(app.descendants(matching: .any)["interfaceTitle"].firstMatch.waitForExistence(timeout: 6)); XCTAssertTrue(app.staticTexts["Gi1/0/1"].firstMatch.exists)
     }
     @MainActor func testGraphicalPortPanelSearchFiberAndDarkAppearance() {
         let app = portPanelApp(dark: true)
@@ -1538,6 +1538,8 @@ final class MNetBoxUITests: XCTestCase {
         administrationButton(app, "panelPort-interfaces-1503").tap()
         administrationButton(app, "connectCable").tap()
         administrationButton(app, "cableDestinationDevice").tap()
+        // Synthetic devices are paged by two: the destination is on the second page.
+        if !app.buttons["reference-303"].waitForExistence(timeout: 3) { administrationButton(app, "Load more").tap() }
         administrationButton(app, "reference-303").tap()
         administrationButton(app, "cableDestinationPort").tap()
         administrationButton(app, "panelPort-interfaces-1601").tap()

@@ -13,8 +13,8 @@ function existingSetting(key, fallback, pattern) {
 // Override with BUNDLE_PREFIX for a personal signing identity.
 const bundlePrefix = process.env.BUNDLE_PREFIX || 'io.github.overnite22';
 if (!/^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(bundlePrefix)) throw new Error('Invalid BUNDLE_PREFIX');
-const appVersion = existingSetting('MARKETING_VERSION', '0.17.0', /^\d+\.\d+\.\d+$/);
-const appBuild = existingSetting('CURRENT_PROJECT_VERSION', '35', /^\d+$/);
+const appVersion = existingSetting('MARKETING_VERSION', '0.18.0', /^\d+\.\d+\.\d+$/);
+const appBuild = existingSetting('CURRENT_PROJECT_VERSION', '36', /^\d+$/);
 const objects = [];
 let sequence = 1;
 const id = () => (sequence++).toString(16).toUpperCase().padStart(24, '0');

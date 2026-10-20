@@ -1,6 +1,6 @@
 # MNetBox
 
-Client iPhone natif (SwiftUI) pour un serveur NetBox HTTPS. Version actuelle : **0.17.0 build 35**.
+Client iPhone natif (SwiftUI) pour un serveur NetBox HTTPS. Version actuelle : **0.18.0 build 36**.
 Cible iOS 26.0+, iPhone en portrait, interface français/anglais, aucune dépendance tierce.
 Référence API : **NetBox 4.7.2**.
 
@@ -8,9 +8,9 @@ Référence API : **NetBox 4.7.2**.
 
 - **Connexion** : jetons NetBox v1 (`Token`) et v2 (`Bearer`), stockés dans le Keychain.
 - **Dashboard** : six compteurs (sites, baies, équipements, VM, préfixes, IP).
-- **Consultation** : inventaire, IPAM, VLAN/groupes, MAC, câbles et contextes (VRF, tenants, rôles, régions…), recherche globale, navigation entre objets liés.
+- **Consultation** : inventaire, IPAM (dont plages d'IP), VLAN/groupes, MAC, câbles et contextes (VRF, tenants, rôles, régions…), recherche globale, **scan QR / code-barres**, journal NetBox, champs personnalisés, navigation entre objets liés.
 - **Graphique** : élévations de baies, panneau de ports d'équipement, schémas et traces de câbles, images NetBox.
-- **Écritures relues et confirmées** : champs texte et métadonnées, création IPAM/VLAN/contextes/interfaces, câbles réseau, console et alimentation (création, édition, suppression), suppressions contrôlées, ajout de photos.
+- **Écritures relues et confirmées** : champs texte et métadonnées, création IPAM/VLAN/contextes/interfaces, câbles réseau, console et alimentation (création, édition, recâblage, suppression), marque « connecté », **prochaine IP / prochain préfixe disponible**, IP assignée directement à une interface, **création d'équipement**, entrées de journal, suppressions contrôlées, ajout de photos.
 
 Le détail des jalons est dans [docs/ROADMAP.md](docs/ROADMAP.md).
 

@@ -11,15 +11,15 @@ Livraisons plus grosses : chaque version regroupe plusieurs fonctionnalités, av
 | Version | Thème | Contenu |
 | --- | --- | --- |
 | **0.16.0 (34)** | Suppression de câble | Livrée et validée sur le serveur réel le 2026-10-20. |
-| **0.17.0 (35)** | Câblage complet | Câbles console ↔ serveur console, alimentation ↔ prise ; édition relue du libellé, statut, type, couleur, description et commentaires d'un câble. |
-| **0.18.0** | Grosse mise à jour (ex-0.18 → 0.21) | Voir les lots ci-dessous, livrés ensemble. |
+| **0.17.0 (35)** | Câblage complet (non publiée, incluse dans 0.18.0) | Câbles console ↔ serveur console, alimentation ↔ prise ; édition relue du libellé, statut, type, couleur, description et commentaires d'un câble. |
+| **0.18.0 (36)** | Grosse mise à jour (ex-0.17 → 0.21) | Voir les lots ci-dessous, publiés ensemble dans une seule Release. |
 
 **0.18.0 — lots, construits et testés l'un après l'autre, publiés ensemble :**
 
-- **A. Câblage terrain** : recâblage relu d'une extrémité (ancienne → nouvelle, sans déconnexion implicite) ; longueur et unité ; actions rapides depuis le port sélectionné (ouvrir, modifier, supprimer son câble) ; bascule « marqué connecté ».
-- **B. IPAM pratique** : prochaine IP et prochain préfixe disponibles (endpoints NetBox natifs) avec relecture ; assignation directe d'une nouvelle IP à une interface ; consultation des plages d'IP.
-- **C. Inventaire terrain** : scan QR / code-barres (caméra, permission explicite) pour ouvrir un équipement par nom, n° de série ou asset tag ; création d'équipement relue ; tags et champs personnalisés en lecture.
-- **D. Comptes et maintenance** : suppression de tenant (jalon 31) ; photos plus anciennes paginées ; journal NetBox (consultation et ajout) ; recette comptes restreints (jalon 30, manuelle).
+- **A. Câblage terrain** : recâblage relu d'une extrémité (ancienne → nouvelle, sans déconnexion implicite) ; longueur et unité ; actions rapides depuis le port sélectionné (ouvrir, modifier, supprimer son câble) ; bascule « marqué connecté ». — ✅ implémenté.
+- **B. IPAM pratique** : prochaine IP et prochain préfixe disponibles (endpoints NetBox natifs) avec relecture ; assignation directe d'une nouvelle IP à une interface ; consultation des plages d'IP. — ✅ implémenté (taux d'utilisation reporté : pas de définition NetBox confirmée).
+- **C. Inventaire terrain** : scan QR / code-barres (caméra, permission explicite) pour ouvrir un équipement par nom, n° de série ou asset tag ; création d'équipement relue ; tags et champs personnalisés en lecture. — ✅ implémenté.
+- **D. Comptes et maintenance** : suppression de tenant (jalon 31) ; photos plus anciennes paginées ; journal NetBox (consultation et ajout) ; recette comptes restreints (jalon 30, manuelle). — ✅ journal et photos paginées ; ⏸️ suppression de tenant reportée : le tenant est référencé par trop de familles d'objets sans compteurs API complets pour garantir les mêmes vérifications que les autres suppressions ; recette comptes restreints manuelle.
 
 Ordre interne indicatif : A → B → C → D. Un IPA de prévisualisation peut être fourni entre deux lots ; seule la version complète fait l'objet d'une Release.
 

@@ -1555,7 +1555,8 @@ final class MNetBoxUITests: XCTestCase {
         administrationButton(app, "confirmCableCreation").tap()
         XCTAssertTrue(app.descendants(matching: .any)["cableCreated"].firstMatch.waitForExistence(timeout: 6))
         app.buttons["Done"].tap()
-        XCTAssertFalse(app.buttons["connectCable"].exists)
+        // The panel reloads after the sheet closes; the now occupied port can no longer be connected.
+        XCTAssertTrue(app.buttons["connectCable"].waitForNonExistence(timeout: 10))
     }
     @MainActor func testPortPanelHidesEmptyFamilies() {
         let app = portPanelApp()

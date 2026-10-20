@@ -291,3 +291,11 @@ Real-server acceptance: use a disposable cable with two single terminations; can
 Interface detail → Create assigned IP address opens the existing reviewed creation form with a fixed physical/VM interface target. The preview includes the typed interface and parent IDs. Review and confirmation freshly read the exact interface, its name and its expected parent; only an IP-address plan can carry this assignment. The single creation POST includes `assigned_object_type` and `assigned_object_id` together with the reviewed address/VRF/metadata. The reply must retain the address and exact typed assignment, including the returned assigned object's ID. No existing address is moved and no primary/OOB designation or device configuration is changed. Failure or uncertainty retains the draft and blocks another attempt in the same form.
 
 IPAM → IP ranges offers read-only paginated browsing, search, family/VRF/tenant filters and fresh details. Filtered pages must retain all query constraints and returned rows must match family, VRF and tenant. Start/end bounds are parsed as IPv4/IPv6 and reversed or mixed-family ranges are rejected. No utilization percentage is inferred from the range bounds or population marks.
+
+## 0.18.0 — allocation, scan and device creation
+
+Next available IP/prefix: on a prefix, Edit → Next available IP (or prefix with a chosen size). The value is read from NetBox's available-ips/available-prefixes endpoints and only pre-fills the usual creation review; nothing is reserved. Confirm and compare in NetBox; repeat quickly from a second client to see the duplicate check block a taken address.
+
+Scan: Search → Scan a label. A QR code holding a device link on this server opens that device by ID; any other code searches devices by name, serial or asset tag. Links to other hosts, HTTP links or links with credentials are refused, never opened.
+
+Device creation: Inventory → Devices → +. Choose type, role, site, optional rack/face/position, serial, asset tag, tenant. Review, cancel once, then confirm one disposable device and delete it in NetBox. A visible duplicate name in the site or asset tag, or a rack from another site, must block before any POST.

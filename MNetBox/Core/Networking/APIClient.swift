@@ -929,6 +929,42 @@ actor APIClient {
         return reply
     }
 
+    func checkDeviceCreation(_ input: DeviceCreationPlan) async throws {
+        let plan = try input.validated()
+        var references: [(String, ReferenceSelection)] = []
+        for (path, value) in [("dcim/device-types/", plan.deviceType), ("dcim/device-roles/", plan.role), ("dcim/sites/", plan.site), ("tenancy/tenants/", plan.tenant)] {
+            if let value { references.append((path, value)) }
+        }
+        for (path, value) in references {
+            let fresh: EditReference = try await get(path + "\(value.id)/")
+            guard fresh.id == value.id else { throw APIError.invalidReference }
+        }
+        if let rack = plan.rack {
+            let fresh: DeviceRackSite = try await get("dcim/racks/\(rack.id)/")
+            guard fresh.id == rack.id, fresh.site.id == plan.site?.id else { throw APIError.invalidReference }
+        }
+        if !plan.name.isEmpty, let site = plan.site,
+           try await deletionDependencyCount("dcim/devices/", [.init(name: "site_id", value: String(site.id)), .init(name: "name", value: plan.name)]) > 0 { throw APIError.duplicateDevice }
+        if !plan.assetTag.isEmpty,
+           try await deletionDependencyCount("dcim/devices/", [.init(name: "asset_tag", value: plan.assetTag)]) > 0 { throw APIError.duplicateDevice }
+    }
+    func createDevice(_ input: DeviceCreationPlan) async throws -> DeviceCreationReply {
+        let plan = try input.validated()
+        try await checkDeviceCreation(plan)
+        try Task.checkCancellation()
+        var request = try builder.get("dcim/devices/")
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(plan)
+        // One attempt only: a lost reply may still have created the device.
+        let (data, response) = try await transfer(request)
+        guard response.statusCode == 201, response.mimeType == "application/json" else { throw APIError.invalidResponse }
+        let reply: DeviceCreationReply
+        do { reply = try JSONDecoder().decode(DeviceCreationReply.self, from: data) } catch { throw APIError.decoding }
+        guard plan.matches(reply) else { throw APIError.invalidResponse }
+        return reply
+    }
+
     func nextAvailableIP(prefixID: Int, parent: IPAMCIDR, vrfID: Int?) async throws -> IPAMCIDR? {
         guard prefixID > 0 else { throw APIError.invalidURL }
         let values: [IPAMAvailability.AvailableIP] = try await get("ipam/prefixes/\(prefixID)/available-ips/", query: [.init(name: "limit", value: "1")])

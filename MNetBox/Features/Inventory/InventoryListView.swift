@@ -6,6 +6,7 @@ struct InventoryListView: View {
     @State private var query = InventoryQuery()
     @State private var refreshID = UUID()
     @State private var pageRequest = 0
+    @State private var creating = false
     private struct Request: Equatable { let query: InventoryQuery; let refresh: UUID }
 
     init(service: InventoryService) {
@@ -70,8 +71,14 @@ struct InventoryListView: View {
         .navigationTitle(service.kind.title)
         .searchable(text: $query.search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search NetBox")
         .toolbar {
+            if service.kind == .devices {
+                Button("New device", systemImage: "plus") { creating = true }.accessibilityIdentifier("createDevice")
+            }
             Button("Refresh", systemImage: "arrow.clockwise") { refreshID = UUID() }
                 .disabled(model.isLoading).accessibilityIdentifier("refreshInventory")
+        }
+        .sheet(isPresented: $creating, onDismiss: { refreshID = UUID() }) {
+            DeviceCreateView(client: service.client, site: service.scope.flatMap { $0.parent == .site ? ReferenceSelection(id: $0.id, title: $0.title) : nil })
         }
         .task(id: Request(query: query, refresh: refreshID)) {
             do {

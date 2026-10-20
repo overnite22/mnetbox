@@ -398,6 +398,56 @@ actor APIClient {
         return .init(images: images, attachmentCount: count, unavailable: unavailable)
     }
 
+    /// One page (12) of the exact object's image attachments, newest first, with the gallery's checks.
+    func imageAttachments(kind: InventoryKind, id: Int, next: String?) async throws -> (images: [NetBoxImageReference], count: Int, next: String?) {
+        guard id > 0 else { throw APIError.invalidReference }
+        let policy = NetBoxImagePolicy(apiURL: builder.credential.configuration.baseURL)
+        let type = kind == .virtualMachines ? "virtualization.virtualmachine" : kind == .sites ? "dcim.site" : kind == .racks ? "dcim.rack" : "dcim.device"
+        let items = [URLQueryItem(name: "object_type", value: type), .init(name: "object_id", value: String(id)), .init(name: "ordering", value: "-id")]
+        try CollectionLinks.validate(next, path: "extras/image-attachments/", required: items)
+        let page: NetBoxImagePage = try await get(next ?? "extras/image-attachments/", query: next == nil ? items + [.init(name: "limit", value: "12")] : [])
+        guard page.count >= page.results.count, page.results.count <= 50, Set(page.results.map(\.id)).count == page.results.count,
+              page.next == nil || !page.results.isEmpty else { throw APIError.invalidResponse }
+        try CollectionLinks.validate(page.next, path: "extras/image-attachments/", required: items)
+        let images = try page.results.map { image -> NetBoxImageReference in
+            guard image.id > 0, image.objectType == type, image.objectID == id, image.parent?.id == id,
+                  (image.imageSize ?? 0) >= 0, (image.imageSize ?? 0) <= NetBoxImagePolicy.byteLimit else { throw APIError.invalidResponse }
+            return .init(id: "attachment-\(image.id)", title: image.name, url: try policy.url(image.image), attachmentID: image.id)
+        }
+        return (images, page.count, page.next)
+    }
+
+    func journalEntries(_ target: JournalTarget, next: String?) async throws -> NetBoxPage<JournalEntry> {
+        try target.validate()
+        let items = [URLQueryItem(name: "assigned_object_type", value: target.objectType), .init(name: "assigned_object_id", value: String(target.id)), .init(name: "ordering", value: "-created")]
+        try CollectionLinks.validate(next, path: "extras/journal-entries/", required: items)
+        let page: NetBoxPage<JournalEntry> = try await get(next ?? "extras/journal-entries/", query: next == nil ? items + [.init(name: "limit", value: "20")] : [])
+        guard page.count >= page.results.count, page.results.count <= 50, Set(page.results.map(\.id)).count == page.results.count,
+              page.results.allSatisfy({ $0.id > 0 && $0.objectType == target.objectType && $0.objectID == target.id }) else { throw APIError.invalidResponse }
+        try CollectionLinks.validate(page.next, path: "extras/journal-entries/", required: items)
+        return page
+    }
+    func checkJournalEntry(_ input: JournalDraft) async throws {
+        let draft = try input.validated()
+        let parent: EditReference = try await get(draft.target.kind.path + "\(draft.target.id)/")
+        guard parent.id == draft.target.id else { throw APIError.invalidReference }
+    }
+    func createJournalEntry(_ input: JournalDraft) async throws -> JournalEntry {
+        let draft = try input.validated()
+        try await checkJournalEntry(draft)
+        try Task.checkCancellation()
+        var request = try builder.get("extras/journal-entries/")
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(draft)
+        let (data, response) = try await transfer(request)
+        guard response.statusCode == 201, response.mimeType == "application/json" else { throw APIError.invalidResponse }
+        let entry: JournalEntry
+        do { entry = try JSONDecoder().decode(JournalEntry.self, from: data) } catch { throw APIError.decoding }
+        guard draft.matches(entry) else { throw APIError.invalidResponse }
+        return entry
+    }
+
     private func contextDuplicateRows(kind: ContextKind, field: String, text: String) async throws -> [ContextAdminRecord] {
         guard kind.writable else { throw APIError.invalidReference }
         let items = [URLQueryItem(name: field, value: text), .init(name: "ordering", value: "id"), .init(name: "limit", value: "50")]

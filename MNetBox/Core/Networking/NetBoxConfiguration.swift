@@ -38,7 +38,7 @@ enum APIError: Error, LocalizedError, Equatable {
     case unsupportedPrefixScope, ipamMoveBlocked, unsupportedVLANScope, vlanIdentityBlocked, groupMembersBlocked
     case deletionBlocked
     case requiredInterfaceName, duplicateInterface
-    case requiredName, invalidName, invalidStatus, invalidLength, invalidPosition, duplicateDevice
+    case requiredName, invalidName, invalidStatus, invalidLength, invalidPosition, duplicateDevice, requiredJournalText
     case invalidVID, requiredVLANName, duplicateVLAN, duplicateVLANGroup, invalidMAC, duplicateMAC, primaryMACBlocked, macAssignmentRejected
     case invalidMTU, invalidReference, requiredRole, invalidWeight, duplicateContext, invalidImage
     case transport, keychain(Int32), missingETag, descriptionTooLong, invalidDNSName, textTooLong(Int)
@@ -75,6 +75,7 @@ enum APIError: Error, LocalizedError, Equatable {
         case .requiredName: L10n.text("A virtual machine must have a name.")
         case .invalidName: L10n.text("The name must not contain line breaks or control characters.")
         case .invalidStatus: L10n.text("Choose a supported status for this object.")
+        case .requiredJournalText: L10n.text("Write the journal entry before reviewing it.")
         case .invalidPosition: L10n.text("Choose a rack, a face and a position between 1 and 100, or no position.")
         case .duplicateDevice: L10n.text("A visible device already uses this name in the site, or this asset tag.")
         case .invalidLength: L10n.text("Enter a positive length with at most two decimals, or leave it empty.")

@@ -75,6 +75,9 @@ struct InventoryDetailView: View {
         Section("Explore") {
             if kind == .devices { NavigationLink { PortPanelView(client: service.client, deviceID: object.id, title: object.title) } label: { Label("Port panel", systemImage: "rectangle.split.3x3") }.accessibilityIdentifier("devicePortPanel") }
             if kind == .devices { NavigationLink { CableListView(service: CableService(client: service.client, deviceID: object.id)) } label: { Label("Cables", systemImage: "cable.connector") }.accessibilityIdentifier("deviceCables") }
+            if [.devices, .virtualMachines, .sites, .racks].contains(kind) {
+                NavigationLink { JournalView(client: service.client, target: JournalTarget(kind: kind, id: object.id), title: object.title) } label: { Label("Journal", systemImage: "book.pages") }.accessibilityIdentifier("objectJournal")
+            }
             if let tenant = object.tenant, let id = tenant.id, id > 0 {
                 NavigationLink { ContextDetailView(service: ContextService(client: service.client, kind: .tenants), id: id) } label: { Label(tenant.text, systemImage: ContextKind.tenants.symbol) }
             }

@@ -25,7 +25,7 @@ struct ImageTransparencyBackground: View {
         }.background(.background).accessibilityHidden(true)
     }
 }
-private struct NetBoxImageCard: View {
+struct NetBoxImageCard: View {
     let reference: NetBoxImageReference; let loader: NetBoxImageLoader
     @State private var model = NetBoxImageModel()
     @State private var expanded = false
@@ -73,7 +73,11 @@ struct NetBoxImageGallery: View {
                         }
                     }
                 }
-                if catalog.attachmentCount > 4 { Text("The four newest image attachments are shown. Additional images remain available in NetBox.").font(.caption).foregroundStyle(.secondary) }
+                if catalog.attachmentCount > 4 {
+                    NavigationLink { NetBoxAllImagesView(client: client, kind: kind, id: id, onDelete: onDelete) } label: {
+                        Label(L10n.format("All images (%ld)", catalog.attachmentCount), systemImage: "photo.stack")
+                    }.accessibilityIdentifier("allNetBoxImages")
+                }
                 if catalog.unavailable && !catalog.images.isEmpty { Text("Some NetBox images are unavailable.").font(.caption).foregroundStyle(.secondary) }
                 if catalog.unavailable { Button("Retry") { refresh = UUID() } }
             } else if failed { Label("Images unavailable", systemImage: "photo.badge.exclamationmark"); Button("Retry") { refresh = UUID() } }
@@ -87,5 +91,49 @@ struct NetBoxImageGallery: View {
                 catalog = try await client.imageCatalog(kind: kind, id: id, deviceTypeID: deviceTypeID)
             } catch { if !Task.isCancelled { failed = true } }
         }
+    }
+}
+
+/// Every image attachment of one object, newest first, loaded twelve at a time.
+struct NetBoxAllImagesView: View {
+    let client: APIClient; let kind: InventoryKind; let id: Int
+    let onDelete: (Int) -> Void
+    @State private var images: [NetBoxImageReference] = []
+    @State private var loader: NetBoxImageLoader?
+    @State private var total = 0
+    @State private var next: String?
+    @State private var loading = false
+    @State private var errorMessage: String?
+    @State private var refresh = UUID()
+    private func load(more: Bool) async {
+        guard !loading else { return }
+        loading = true; errorMessage = nil; defer { loading = false }
+        do {
+            if loader == nil { loader = await client.imageLoader() }
+            let page = try await client.imageAttachments(kind: kind, id: id, next: more ? next : nil)
+            let known = Set(images.map(\.id))
+            images = (more ? images : []) + page.images.filter { !more || !known.contains($0.id) }
+            total = page.count; next = page.next
+        } catch { if !Task.isCancelled { errorMessage = readErrorMessage(error) } }
+    }
+    var body: some View {
+        List {
+            if let error = errorMessage { StatusMessage(message: error); Button("Retry") { refresh = UUID() } }
+            if let loader {
+                ForEach(images) { image in
+                    NetBoxImageCard(reference: image, loader: loader)
+                    if let attachmentID = image.attachmentID {
+                        Button("Delete image", systemImage: "trash", role: .destructive) { onDelete(attachmentID) }
+                            .accessibilityIdentifier("deleteNetBoxImage-\(attachmentID)")
+                    }
+                }
+            }
+            if !images.isEmpty { Text(L10n.format("%ld loaded · %ld total", images.count, total)).font(.caption).foregroundStyle(.secondary) }
+            if next != nil, !loading { Button("Load more") { Task { await load(more: true) } }.accessibilityIdentifier("allImagesLoadMore") }
+            if loading { ProgressView("Loading…") }
+        }
+        .navigationTitle("All images").navigationBarTitleDisplayMode(.inline)
+        .toolbar { Button("Refresh", systemImage: "arrow.clockwise") { refresh = UUID() }.disabled(loading) }
+        .task(id: refresh) { await load(more: false) }
     }
 }

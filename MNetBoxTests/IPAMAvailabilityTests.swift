@@ -50,9 +50,9 @@ final class IPAMAvailabilityTests: XCTestCase {
         XCTAssertEqual(ip?.text, "198.51.100.1/24"); XCTAssertEqual(prefix?.text, "198.51.100.64/28")
         let requests = AvailabilityProtocol.requests
         XCTAssertEqual(requests.map(\.httpMethod), ["GET", "GET"])
-        XCTAssertEqual(requests.first?.url?.path, "/api/ipam/prefixes/5/available-ips/")
+        XCTAssertEqual(requests.first?.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.path }, "/api/ipam/prefixes/5/available-ips/")
         XCTAssertEqual(requests.first?.url?.query, "limit=1")
-        XCTAssertEqual(requests.last?.url?.path, "/api/ipam/prefixes/5/available-prefixes/")
+        XCTAssertEqual(requests.last?.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.path }, "/api/ipam/prefixes/5/available-prefixes/")
     }
 }
 
@@ -66,7 +66,7 @@ private final class AvailabilityProtocol: URLProtocol, @unchecked Sendable {
     override func startLoading() {
         guard let url = request.url else { return }
         Self.lock.lock(); Self.stored.append(request); Self.lock.unlock()
-        let body: Any = url.path.hasSuffix("available-ips/")
+        let body: Any = (URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? "").hasSuffix("available-ips/")
             ? [["family": 4, "address": "198.51.100.1/24", "vrf": NSNull()]]
             : [["family": 4, "prefix": "198.51.100.64/26", "vrf": NSNull()]]
         guard let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]),

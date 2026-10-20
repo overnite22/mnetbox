@@ -65,7 +65,8 @@ private final class DeviceCreationProtocol: URLProtocol, @unchecked Sendable {
     override func startLoading() {
         guard let url = request.url else { return }
         Self.state.add(request)
-        let mode = Self.state.mode, path = url.path
+        // URL.path drops the trailing slash; URLComponents keeps the exact API path.
+        let mode = Self.state.mode, path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? url.path
         var status = 200
         var body: Any = ["count": 0, "next": NSNull(), "previous": NSNull(), "results": []]
         if request.httpMethod == "POST" {

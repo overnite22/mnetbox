@@ -68,7 +68,7 @@ private final class JournalProtocol: URLProtocol, @unchecked Sendable {
         if request.httpMethod == "POST" {
             status = 201
             body = Self.entry(13, kind: mode == "wrong-reply" ? "info" : "success", comments: "Cabling checked")
-        } else if url.path == "/api/extras/journal-entries/" {
+        } else if URLComponents(url: url, resolvingAgainstBaseURL: false)?.path == "/api/extras/journal-entries/" {
             body = ["count": 2, "next": NSNull(), "previous": NSNull(),
                     "results": [Self.entry(12, comments: "Rebooted"), Self.entry(11, object: mode == "foreign" ? 999 : 301, comments: "Installed")]]
         } else {

@@ -3,7 +3,7 @@ import XCTest
 
 final class IPRangeTests: XCTestCase {
     private func object(start: String = "198.51.100.10/24", end: String = "198.51.100.20/24", family: Int = 4, vrf: Int? = nil) throws -> IPRangeObject {
-        let data = try JSONSerialization.data(withJSONObject: ["id": 1, "start_address": start, "end_address": end, "family": ["value": family], "vrf": vrf.map { ["id": $0] } ?? NSNull() as Any])
+        let data = try JSONSerialization.data(withJSONObject: ["id": 1, "start_address": start, "end_address": end, "family": ["value": family], "vrf": vrf.map { ["id": $0] as Any } ?? NSNull()])
         return try JSONDecoder().decode(IPRangeObject.self, from: data)
     }
     func testBothFamiliesAndLargeIPv6Bounds() throws {

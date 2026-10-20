@@ -4,6 +4,25 @@
 
 Scope agreed on 2026-10-03: a native SwiftUI iPhone app for iOS 27, linked navigation and graphical rack elevations with native icons/illustrations. No favorites. Preserve the existing API client, observable feature models and Keychain storage. All implemented and planned read-only features use GET; API credentials are entered only in the app and never written to files or logs.
 
+## Feuille de route à partir d'octobre 2026
+
+Livraisons plus grosses : chaque version regroupe plusieurs fonctionnalités, avec tests unitaires, scénarios UI et une suite UI complète avant publication. Toute écriture garde le même contrat : relecture Avant/Après, ETag, confirmation explicite, une seule tentative, jamais d'action implicite. La validation sur le vrai serveur reste faite par l'utilisateur.
+
+| Version | Thème | Contenu prévu |
+| --- | --- | --- |
+| **0.16.0 (34)** | Suppression de câble | Livrée et validée sur le serveur réel le 2026-10-20. |
+| **0.17.0 (35)** | Câblage complet | Câbles console ↔ serveur console, alimentation ↔ prise (règles de compatibilité NetBox) ; édition relue du libellé, statut, type, couleur, description et commentaires d'un câble. |
+| **0.18.0** | Recâblage et terrain | Recâblage relu d'une extrémité (ancienne → nouvelle, sans déconnexion implicite) ; longueur et unité ; actions rapides depuis le port sélectionné (ouvrir, modifier, supprimer son câble) ; bascule « marqué connecté ». |
+| **0.19.0** | IPAM pratique | Prochaine IP / prochain préfixe disponible (endpoints NetBox natifs) avec relecture ; assignation directe d'une nouvelle IP à une interface ; consultation des plages d'IP ; taux d'utilisation des préfixes si la définition NetBox est confirmée. |
+| **0.20.0** | Inventaire terrain | Scan QR / code-barres (caméra, permission explicite) pour ouvrir un équipement par nom, n° de série ou asset tag ; création d'équipement relue (site, baie, position, type, rôle) ; affichage des tags et champs personnalisés. |
+| **0.21.0** | Comptes et maintenance | Validation comptes restreints (jalon 30) ; suppression de tenant (jalon 31) ; photos plus anciennes paginées ; journal NetBox (consultation et ajout d'entrées). |
+
+Les détails historiques des jalons 0 à 34 suivent.
+
+### 34b/34c — Câblage complet (0.17.0 build 35, implémenté ; validation réelle en attente)
+
+Création graphique étendue aux ports console, serveur console, alimentation et prises, avec la matrice native NetBox 4.7 : console ↔ serveur console ou port avant/arrière, alimentation ↔ prise uniquement, interfaces ↔ interfaces ou ports avant/arrière. Le panneau de destination ne propose que les familles compatibles avec la source. La fiche câble permet de modifier le libellé (100 caractères, sans caractères de contrôle), le statut (connecté, prévu, en retrait), le type, la couleur, la description et les commentaires, un champ à la fois, via l'éditeur relu existant (PATCH d'un seul champ avec If-Match, valeurs hors liste refusées localement).
+
 ## 0 — Project foundations
 
 Implemented and simulator-tested: app/unit/UI targets, shared scheme, SwiftUI shell and visual primitives. iOS 27 deployment target. Remaining distribution work is tracked in milestone 7.

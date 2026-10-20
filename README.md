@@ -1,6 +1,6 @@
 # MNetBox
 
-Client iPhone natif (SwiftUI) pour un serveur NetBox HTTPS. Version actuelle : **0.16.0 build 34**.
+Client iPhone natif (SwiftUI) pour un serveur NetBox HTTPS. Version actuelle : **0.17.0 build 35**.
 Cible iOS 26.0+, iPhone en portrait, interface français/anglais, aucune dépendance tierce.
 Référence API : **NetBox 4.7.2**.
 
@@ -10,7 +10,7 @@ Référence API : **NetBox 4.7.2**.
 - **Dashboard** : six compteurs (sites, baies, équipements, VM, préfixes, IP).
 - **Consultation** : inventaire, IPAM, VLAN/groupes, MAC, câbles et contextes (VRF, tenants, rôles, régions…), recherche globale, navigation entre objets liés.
 - **Graphique** : élévations de baies, panneau de ports d'équipement, schémas et traces de câbles, images NetBox.
-- **Écritures relues et confirmées** : champs texte et métadonnées, création IPAM/VLAN/contextes/interfaces/câbles, suppressions contrôlées, ajout de photos.
+- **Écritures relues et confirmées** : champs texte et métadonnées, création IPAM/VLAN/contextes/interfaces, câbles réseau, console et alimentation (création, édition, suppression), suppressions contrôlées, ajout de photos.
 
 Le détail des jalons est dans [docs/ROADMAP.md](docs/ROADMAP.md).
 

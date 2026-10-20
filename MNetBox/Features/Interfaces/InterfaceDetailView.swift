@@ -145,6 +145,7 @@ struct CableDetailView: View {
     @State private var refreshID = UUID()
     @State private var deleting = false
     @State private var deleted = false
+    @State private var editingField: EditableTextField?
     init(client: APIClient, id: Int, onDeleted: (() -> Void)? = nil) {
         self.client = client
         self.onDeleted = onDeleted
@@ -168,8 +169,10 @@ struct CableDetailView: View {
                 Section("Overview") {
                     Label(cable.label?.isEmpty == false ? (cable.label ?? "") : cable.display ?? L10n.identifier("Cable #%ld", cable.id), systemImage: "cable.connector")
                         .font(.title3.bold()).accessibilityIdentifier("cableTitle")
-                    DetailField(title: "Status", value: cable.status?.text ?? "—")
-                    DetailField(title: "Type", value: cable.type ?? "—")
+                    DetailField(title: "Label", value: cable.label?.isEmpty == false ? cable.label ?? "" : "—", action: { editingField = .label }, identifier: "cableField-label")
+                    DetailField(title: "Status", value: cable.status?.text ?? "—", action: { editingField = .status }, identifier: "cableField-status")
+                    DetailField(title: "Type", value: EditableTextField.type.displayValue(cable.type ?? ""), action: { editingField = .type }, identifier: "cableField-type")
+                    DetailField(title: "Color", value: EditableTextField.color.displayValue(cable.color ?? ""), action: { editingField = .color }, identifier: "cableField-color")
                     DetailField(title: "Length", value: "\(cable.length?.text ?? "—") \(cable.lengthUnit?.text ?? "")")
                 }
                 Section("Connection overview") { CableDiagram(client: client, cable: cable) }
@@ -179,16 +182,24 @@ struct CableDetailView: View {
                     Section("Tenant") { NavigationLink { ContextDetailView(service: ContextService(client: client, kind: .tenants), id: id) } label: { Label(tenant.text, systemImage: ContextKind.tenants.symbol) } }
                 }
                 if let bundle = cable.bundle { Section("Cable bundle") { Text(bundle.text) } }
-                if let comments = cable.comments, !comments.isEmpty { Section("Comments") { Text(comments) } }
-                if let text = cable.description, !text.isEmpty { Section("Description") { Text(text) } }
+                Section("Description") { DetailField(title: "Description", value: cable.description?.isEmpty == false ? cable.description ?? "" : "—", action: { editingField = .description }, identifier: "cableField-description") }
+                Section("Comments") { DetailField(title: "Comments", value: cable.comments?.isEmpty == false ? cable.comments ?? "" : "—", action: { editingField = .comments }, identifier: "cableField-comments") }
             }
         }
         .navigationTitle("Cable").navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editingField, onDismiss: { refreshID = UUID() }) { field in
+            if let cable = model.object { TextEditView(client: client, target: TextEditTarget(collection: .cables, id: cable.id), field: field) }
+        }
         .sheet(isPresented: $deleting, onDismiss: { if deleted { dismiss(); onDeleted?() } else { refreshID = UUID() } }) {
             if let cable = model.object { DeletionView(client: client, target: .init(collection: .cables, id: cable.id)) { deleted = true } }
         }
         .toolbar {
             if model.object != nil, !model.isLoading, model.errorMessage == nil {
+                Menu {
+                    ForEach([EditableTextField.label, .status, .type, .color, .description, .comments]) { field in
+                        Button(field.editTitle) { editingField = field }.accessibilityIdentifier("editCable-\(field.rawValue)")
+                    }
+                } label: { Label("Edit", systemImage: "pencil") }.accessibilityIdentifier("editCable")
                 Button("Delete cable", systemImage: "trash", role: .destructive) { deleting = true }.accessibilityIdentifier("deleteCable")
             }
             Button("Refresh", systemImage: "arrow.clockwise") { refreshID = UUID() }.disabled(model.isLoading)

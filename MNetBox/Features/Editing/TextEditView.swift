@@ -81,7 +81,7 @@ struct TextEditView: View {
                         Section("Before") { Text(model.field.displayValue(snapshot.object.value(for: model.field) ?? "")) }
                         Section("After") { Text(model.field.displayValue(model.proposedValue)) }
                         Section {
-                            if model.field == .status || (model.field == .name && (model.target.collection == .virtualMachines || model.target.collection == .vlans)) {
+                            if model.field.isChoice || (model.field == .name && (model.target.collection == .virtualMachines || model.target.collection == .vlans)) {
                                 Text("This changes only the selected field on the server.")
                             } else {
                                 Text("This changes only the selected field on the server. An empty value clears the existing value.")
@@ -93,15 +93,16 @@ struct TextEditView: View {
                     } else {
                         Section(model.field.title) {
                             Group {
-                                if model.field == .status {
+                                if model.field.isChoice {
                                     Picker(model.field.title, selection: $model.draft) {
-                                        let choices = model.field.statusChoices(for: model.target.collection)
+                                        let choices = model.field.choices(for: model.target.collection)
                                         if !choices.contains(model.draft) {
-                                            Text(snapshot.object.status?.label ?? model.draft).tag(model.draft)
+                                            // Keep an unknown current server value visible without offering it as a choice.
+                                            Text(model.field == .status ? snapshot.object.status?.label ?? model.draft : model.draft).tag(model.draft)
                                         }
-                                        ForEach(choices, id: \.self) { Text(L10n.text($0.capitalized)).tag($0) }
+                                        ForEach(choices, id: \.self) { Text(model.field.displayValue($0)).tag($0) }
                                     }.pickerStyle(.menu)
-                                } else if model.field == .name {
+                                } else if model.field == .name || model.field == .label {
                                     TextField(model.field.title, text: $model.draft)
                                         .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
                                 } else if model.field == .comments {
@@ -111,10 +112,10 @@ struct TextEditView: View {
                                     TextField(model.field.title, text: $model.draft, axis: .vertical).lineLimit(3...8)
                                 }
                             }
-                                .textInputAutocapitalization(model.field == .dnsName || model.field == .name ? .never : .sentences)
-                                .autocorrectionDisabled(model.field == .dnsName || model.field == .name)
+                                .textInputAutocapitalization(model.field == .dnsName || model.field == .name || model.field == .label ? .never : .sentences)
+                                .autocorrectionDisabled(model.field == .dnsName || model.field == .name || model.field == .label)
                                 .disabled(model.isSaving).accessibilityIdentifier("\(model.field.rawValue)Draft")
-                            if model.field != .status {
+                            if !model.field.isChoice {
                                 Text(L10n.format("Maximum %ld characters", model.target.collection == .vlanGroups && model.field == .name ? 100 : model.field.limit)).font(.caption).foregroundStyle(.secondary)
                             }
                             if model.field == .name {

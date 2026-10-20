@@ -7,6 +7,7 @@ struct TextEditTarget: Sendable, Equatable {
         case prefixes = "ipam/prefixes/", ipAddresses = "ipam/ip-addresses/"
         case vlanGroups = "ipam/vlan-groups/"
         case vlans = "ipam/vlans/", macAddresses = "dcim/mac-addresses/"
+        case cables = "dcim/cables/"
     }
     let collection: Collection
     let id: Int
@@ -23,8 +24,11 @@ struct TextEditObject: Codable, Sendable {
     let description: String
     let comments: String?
     let dnsName: String?
+    let label: String?
+    let cableType: String?
+    let color: String?
     struct EditStatus: Codable, Sendable { let value: String; let label: String? }
-    enum CodingKeys: String, CodingKey { case id, display, name, status, prefix, address, description, comments; case dnsName = "dns_name" }
+    enum CodingKeys: String, CodingKey { case id, display, name, status, prefix, address, description, comments, label, color; case dnsName = "dns_name", cableType = "type" }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(Int.self, forKey: .id)
@@ -37,6 +41,10 @@ struct TextEditObject: Codable, Sendable {
         description = try values.decode(String.self, forKey: .description)
         comments = try values.decodeIfPresent(String.self, forKey: .comments)
         dnsName = try values.decodeIfPresent(String.self, forKey: .dnsName)
+        // Only cables edit these as plain strings; other shapes are ignored, never coerced.
+        label = (try? values.decodeIfPresent(String.self, forKey: .label)) ?? nil
+        cableType = (try? values.decodeIfPresent(String.self, forKey: .cableType)) ?? nil
+        color = (try? values.decodeIfPresent(String.self, forKey: .color)) ?? nil
     }
     func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
@@ -49,6 +57,9 @@ struct TextEditObject: Codable, Sendable {
         try values.encode(description, forKey: .description)
         try values.encodeIfPresent(comments, forKey: .comments)
         try values.encodeIfPresent(dnsName, forKey: .dnsName)
+        try values.encodeIfPresent(label, forKey: .label)
+        try values.encodeIfPresent(cableType, forKey: .cableType)
+        try values.encodeIfPresent(color, forKey: .color)
     }
     func value(for field: EditableTextField) -> String? {
         switch field {
@@ -57,43 +68,75 @@ struct TextEditObject: Codable, Sendable {
         case .dnsName: dnsName
         case .name: hasName ? (name ?? "") : nil
         case .status: status?.value
+        case .label: label
+        case .type: cableType
+        case .color: color
         }
     }
     var title: String { display ?? name ?? prefix ?? address ?? "#\(id)" }
 }
 enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable {
-    case description, comments, dnsName = "dns_name", name, status
+    case description, comments, dnsName = "dns_name", name, status, label, type, color
     var id: String { rawValue }
-    var title: String {
-        L10n.text(self == .name ? "Name" : self == .status ? "Status" : self == .dnsName ? "DNS name" : self == .comments ? "Comments" : "Description")
+    private var key: String {
+        switch self {
+        case .description: "Description"
+        case .comments: "Comments"
+        case .dnsName: "DNS name"
+        case .name: "Name"
+        case .status: "Status"
+        case .label: "Label"
+        case .type: "Type"
+        case .color: "Color"
+        }
     }
-    var editTitle: String {
-        L10n.text(self == .name ? "Edit name" : self == .status ? "Edit status" : self == .dnsName ? "Edit DNS name" : self == .comments ? "Edit comments" : "Edit description")
+    var title: String { L10n.text(key) }
+    var editTitle: String { L10n.text("Edit " + (self == .dnsName ? "DNS name" : key.lowercased())) }
+    var savedTitle: String { L10n.text((self == .dnsName ? "DNS name" : key) + " saved") }
+    var limit: Int {
+        switch self {
+        case .name: 64
+        case .status, .type: 50
+        case .label: 100
+        case .color: 6
+        case .description: 200
+        case .dnsName: 255
+        case .comments: 10000
+        }
     }
-    var savedTitle: String {
-        L10n.text(self == .name ? "Name saved" : self == .status ? "Status saved" : self == .dnsName ? "DNS name saved" : self == .comments ? "Comments saved" : "Description saved")
-    }
-    var limit: Int { self == .name ? 64 : self == .status ? 50 : self == .description ? 200 : self == .dnsName ? 255 : 10000 }
+    /// Fields edited by choosing a server value rather than typing text.
+    var isChoice: Bool { self == .status || self == .type || self == .color }
     func supports(_ collection: TextEditTarget.Collection) -> Bool {
-        if self == .name, collection == .vlanGroups { return true }
-        if self == .name || self == .status { return collection == .devices || collection == .virtualMachines || collection == .vlans }
-        return self != .dnsName || collection == .ipAddresses
+        switch self {
+        case .name: [.devices, .virtualMachines, .vlans, .vlanGroups].contains(collection)
+        case .status: [.devices, .virtualMachines, .vlans, .cables].contains(collection)
+        case .label, .type, .color: collection == .cables
+        case .dnsName: collection == .ipAddresses
+        case .description, .comments: true
+        }
     }
-    func statusChoices(for collection: TextEditTarget.Collection) -> [String] {
-        switch collection {
-        case .devices: InventoryKind.devices.statuses
-        case .virtualMachines: InventoryKind.virtualMachines.statuses
-        case .vlans: ["active", "reserved", "deprecated"]
+    func choices(for collection: TextEditTarget.Collection) -> [String] {
+        switch (self, collection) {
+        case (.status, .devices): InventoryKind.devices.statuses
+        case (.status, .virtualMachines): InventoryKind.virtualMachines.statuses
+        case (.status, .vlans): ["active", "reserved", "deprecated"]
+        case (.status, .cables): ["connected", "planned", "decommissioning"]
+        case (.type, .cables): CableCreationPlan.types
+        case (.color, .cables): [""] + CableCreationPlan.colors
         default: []
         }
     }
     func displayValue(_ value: String) -> String {
-        if value.isEmpty { return L10n.text("Empty") }
-        return self == .status ? L10n.text(value.capitalized) : value
+        switch self {
+        case .type: return value.isEmpty ? L10n.text("Unspecified") : value
+        case .color: return CableCreationPlan.colorName(value)
+        case .status: return value.isEmpty ? L10n.text("Empty") : L10n.text(value.capitalized)
+        default: return value.isEmpty ? L10n.text("Empty") : value
+        }
     }
     func normalized(_ text: String) -> String {
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return self == .dnsName ? value.lowercased() : value
+        return self == .dnsName || self == .color ? value.lowercased() : value
     }
     func validate(_ value: String, for collection: TextEditTarget.Collection? = nil) throws {
         let limit = collection == .vlanGroups && self == .name ? 100 : limit
@@ -107,9 +150,10 @@ enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable 
             if collection == .vlans, value.isEmpty { throw APIError.requiredVLANName }
             if value.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) { throw APIError.invalidName }
         }
-        if self == .status {
-            guard let collection, statusChoices(for: collection).contains(value) else { throw APIError.invalidStatus }
+        if isChoice {
+            guard let collection, choices(for: collection).contains(value) else { throw APIError.invalidStatus }
         }
+        if self == .label, value.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) { throw APIError.invalidName }
         // Match NetBox 4.7.2's DNSValidator, including its supported wildcard/underscore syntax.
         if self == .dnsName, !value.isEmpty,
            value.range(of: #"\A([0-9A-Za-z_-]+|\*)(\.[0-9A-Za-z_-]+)*\.?\z"#, options: .regularExpression) == nil {

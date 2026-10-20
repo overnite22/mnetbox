@@ -5,7 +5,7 @@ enum CableCreationError: Error, LocalizedError {
     var errorDescription: String? {
         let text = switch self {
         case .occupied: "This port is occupied or marked connected. Choose a free port."
-        case .unsupported: "Choose a physical network interface or a front/rear port."
+        case .unsupported: "Choose a compatible port: network, front/rear, console or power."
         case .sameEndpoint: "Choose two different ports."
         case .changed: "A cable endpoint changed. Reload and review the connection again."
         }
@@ -14,9 +14,31 @@ enum CableCreationError: Error, LocalizedError {
 }
 struct CableEndpointSelection: Identifiable, Equatable, Sendable {
     let family: PortPanelFamily; let id: Int; let deviceID: Int; let deviceName: String; let name: String
-    var objectType: String { "dcim." + (family == .interfaces ? "interface" : family == .front ? "frontport" : "rearport") }
+    var objectType: String {
+        switch family {
+        case .interfaces: "dcim.interface"
+        case .front: "dcim.frontport"
+        case .rear: "dcim.rearport"
+        case .console: "dcim.consoleport"
+        case .consoleServer: "dcim.consoleserverport"
+        case .power: "dcim.powerport"
+        case .outlet: "dcim.poweroutlet"
+        }
+    }
     var path: String { family.path + "\(id)/" }
-    static let families: [PortPanelFamily] = [.interfaces, .front, .rear]
+    static let families: [PortPanelFamily] = [.interfaces, .front, .rear, .console, .consoleServer, .power, .outlet]
+    /// NetBox 4.7 COMPATIBLE_TERMINATION_TYPES restricted to device components.
+    static func compatible(_ a: PortPanelFamily, _ b: PortPanelFamily) -> Bool {
+        let passive: Set<PortPanelFamily> = [.front, .rear]
+        switch a {
+        case .interfaces: return b == .interfaces || passive.contains(b)
+        case .front, .rear: return [.interfaces, .front, .rear, .console, .consoleServer].contains(b)
+        case .console: return b == .consoleServer || passive.contains(b)
+        case .consoleServer: return b == .console || passive.contains(b)
+        case .power: return b == .outlet
+        case .outlet: return b == .power
+        }
+    }
     func validate() throws {
         guard Self.families.contains(family), id > 0, deviceID > 0, !name.isEmpty else { throw CableCreationError.unsupported }
     }
@@ -50,11 +72,15 @@ struct CableEndpointSnapshot: Decodable, Sendable {
 struct CableCreationPlan: Encodable, Sendable {
     let a: CableEndpointSelection; let b: CableEndpointSelection
     let label: String; let type: String; let status: String; let color: String
-    static let types = ["", "cat5e", "cat6", "cat6a", "dac-passive", "dac-active", "smf", "mmf", "mmf-om3", "mmf-om4"]
+    static let types = ["", "cat5e", "cat6", "cat6a", "dac-passive", "dac-active", "smf", "mmf", "mmf-om3", "mmf-om4", "power", "usb"]
     static let colors = ["0088ff", "00aa66", "ff9900", "aa55dd", "333333"]
+    static func colorName(_ hex: String) -> String {
+        L10n.text(["0088ff": "Blue", "00aa66": "Green", "ff9900": "Orange", "aa55dd": "Purple", "333333": "Black", "": "None"][hex.lowercased()] ?? hex)
+    }
     func validated() throws -> Self {
         try a.validate(); try b.validate()
         guard a.family != b.family || a.id != b.id else { throw CableCreationError.sameEndpoint }
+        guard CableEndpointSelection.compatible(a.family, b.family) else { throw CableCreationError.unsupported }
         guard Self.types.contains(type), ["connected", "planned"].contains(status), Self.colors.contains(color) else { throw APIError.invalidResponse }
         guard label.unicodeScalars.count <= 100, !label.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { throw APIError.invalidName }
         return self

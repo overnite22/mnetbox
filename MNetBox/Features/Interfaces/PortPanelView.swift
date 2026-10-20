@@ -134,6 +134,7 @@ struct PortPanelView: View {
     }
     private func selectable(_ port: PortPanelRecord) -> Bool {
         port.cableCandidate(family: query.family) && !(excluding?.family == query.family && excluding?.id == port.id)
+            && (excluding.map { CableEndpointSelection.compatible($0.family, query.family) } ?? true)
     }
     private func portButton(_ port: PortPanelRecord) -> some View {
         Button { selectedID = port.id } label: { PortPanelTile(port: port, family: query.family, selected: selectedID == port.id) }
@@ -200,7 +201,7 @@ struct PortPanelView: View {
                         Divider()
                         if onSelect != nil {
                             Button("Choose this port") { onSelect?(endpoint(port)); dismiss() }.buttonStyle(.borderedProminent).disabled(!selectable(port)).accessibilityIdentifier("chooseCablePort")
-                            if !selectable(port) { Text("Choose a free physical port different from the source.").font(.caption).foregroundStyle(.secondary) }
+                            if !selectable(port) { Text("Choose a free, compatible port different from the source.").font(.caption).foregroundStyle(.secondary) }
                         } else if selectable(port) {
                             Button("Connect a cable", systemImage: "cable.connector") { cableSource = endpoint(port) }.buttonStyle(.bordered).accessibilityIdentifier("connectCable")
                         }
@@ -220,7 +221,7 @@ struct PortPanelView: View {
         .task(id: refresh) {
             discovering = true
             var families: [PortPanelFamily] = []; var failed = false
-            for family in (onSelect == nil ? PortPanelFamily.allCases : CableEndpointSelection.families) {
+            for family in (onSelect == nil ? PortPanelFamily.allCases : CableEndpointSelection.families.filter { family in excluding.map { CableEndpointSelection.compatible($0.family, family) } ?? true }) {
                 do {
                     let page = try await service.page(query: .init(family: family), next: nil)
                     try Task.checkCancellation()

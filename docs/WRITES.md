@@ -269,3 +269,9 @@ Occupied, marked-connected, same endpoint, unsupported family, virtual/wireless/
 ## Cable deletion — milestone 34a
 
 On a disposable test cable (for example one created with build 33), open Inventory → Cables or Interface → Cable, tap the trash button and check server, title, ID and both A/B ends. Cancel once and verify the cable still exists. Reopen, type the exact ID and confirm. Verify in NetBox that only this cable disappeared and that both ports are free again, with their names, descriptions and VLANs unchanged. Modifying the cable in NetBox between review and confirmation must produce a conflict without deletion. A denied, lost or ambiguous reply is never retried: check NetBox before opening a new deletion. Automated tests use synthetic responses only.
+
+## Console/power cables and cable editing — 0.17.0 build 35
+
+Console/power: on a device with a free console port, open Port panel → Console ports → select it → Connect a cable; the destination panel must only offer console server ports or front/rear ports. Same for a power port (outlets only). Create one disposable cable and check both endpoints in NetBox, then delete it from the app.
+
+Editing: open a cable → Edit (or tap a field) → change label, status, type, color, description or comments one at a time. Review Before/After, Cancel once, then confirm. Compare the change log in NetBox: exactly one field changed per save. Modifying the cable in NetBox between review and confirmation must produce a conflict without saving.

@@ -5,6 +5,7 @@ import Foundation
 enum IPAMFixture {
     static func response(_ url: URL, extra: [[String: Any]] = []) -> (Int, String)? {
         guard let parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        if let reply = IPRangeFixture.response(url) { return reply }
         let isPrefix = parts.path.contains("/ipam/prefixes/")
         guard isPrefix || parts.path.contains("/ipam/ip-addresses/") else { return nil }
         let query = parts.queryItems ?? []

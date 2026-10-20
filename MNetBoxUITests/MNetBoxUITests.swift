@@ -14,6 +14,19 @@ final class MNetBoxUITests: XCTestCase {
         return app
     }
 
+    @MainActor func testIPRangeDirectoryPaginationAndFreshDetail() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard"]
+        app.launch(); app.tabBars.buttons["IPAM"].tap()
+        reveal(app.buttons["ipamCategory-ipRanges"], in: app).tap()
+        XCTAssertTrue(app.buttons["ipRange-91"].waitForExistence(timeout: 5))
+        reveal(app.buttons["ipRangesLoadMore"], in: app).tap()
+        reveal(app.buttons["ipRange-93"], in: app).tap()
+        XCTAssertTrue(app.staticTexts["2001:db8::10/64 – 2001:db8::20/64"].waitForExistence(timeout: 5))
+        XCTAssertTrue(reveal(app.staticTexts["Range notes"], in: app).exists)
+        attach(app, name: "IPv6 range detail after pagination")
+    }
+
     @MainActor func testAppInformationVersionAndSafeDiagnostic() {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard"]

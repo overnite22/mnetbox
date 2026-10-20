@@ -8475,6 +8475,438 @@
           }
         }
       }
+    },
+    "End %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extrémité %@"
+          }
+        }
+      }
+    },
+    "Move end %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move end %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer l’extrémité %@"
+          }
+        }
+      }
+    },
+    "Kept end": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept end"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extrémité conservée"
+          }
+        }
+      }
+    },
+    "Current end": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current end"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extrémité actuelle"
+          }
+        }
+      }
+    },
+    "New end": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New end"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle extrémité"
+          }
+        }
+      }
+    },
+    "Cable end moved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable end moved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extrémité du câble déplacée"
+          }
+        }
+      }
+    },
+    "This moves one end of the cable in NetBox. The previous port becomes free; no equipment is configured.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This moves one end of the cable in NetBox. The previous port becomes free; no equipment is configured."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela déplace une extrémité du câble dans NetBox. L’ancien port devient libre ; aucun équipement n’est configuré."
+          }
+        }
+      }
+    },
+    "Confirm move": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm move"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmer le déplacement"
+          }
+        }
+      }
+    },
+    "Review move": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review move"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier le déplacement"
+          }
+        }
+      }
+    },
+    "Move cable end": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move cable end"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer une extrémité"
+          }
+        }
+      }
+    },
+    "Only cables with exactly one known device port on each side can be moved here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only cables with exactly one known device port on each side can be moved here."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seuls les câbles avec exactement un port d’équipement connu de chaque côté peuvent être déplacés ici."
+          }
+        }
+      }
+    },
+    "The move was not confirmed. Check the cable in NetBox before trying again; the request may have succeeded.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The move was not confirmed. Check the cable in NetBox before trying again; the request may have succeeded."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le déplacement n’a pas été confirmé. Vérifiez le câble dans NetBox avant de réessayer ; la requête a pu aboutir."
+          }
+        }
+      }
+    },
+    "Length unit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length unit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unité de longueur"
+          }
+        }
+      }
+    },
+    "Edit length": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit length"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier la longueur"
+          }
+        }
+      }
+    },
+    "Edit length unit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit length unit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier l’unité de longueur"
+          }
+        }
+      }
+    },
+    "Length saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length saved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longueur enregistrée"
+          }
+        }
+      }
+    },
+    "Length unit saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length unit saved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unité de longueur enregistrée"
+          }
+        }
+      }
+    },
+    "Positive number, up to two decimals. Empty clears the length.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Positive number, up to two decimals. Empty clears the length."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre positif, deux décimales au plus. Vide efface la longueur."
+          }
+        }
+      }
+    },
+    "Enter a positive length with at most two decimals, or leave it empty.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a positive length with at most two decimals, or leave it empty."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez une longueur positive avec au plus deux décimales, ou laissez vide."
+          }
+        }
+      }
+    },
+    "Marked connected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marked connected"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marqué connecté"
+          }
+        }
+      }
+    },
+    "Not marked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not marked"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non marqué"
+          }
+        }
+      }
+    },
+    "Connected mark": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected mark"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marque « connecté »"
+          }
+        }
+      }
+    },
+    "Remove connected mark": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove connected mark"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer la marque « connecté »"
+          }
+        }
+      }
+    },
+    "Mark as connected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as connected"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marquer comme connecté"
+          }
+        }
+      }
+    },
+    "Documents a connection that is not modeled by a cable, for example to unmanaged equipment. Nothing is configured on the device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents a connection that is not modeled by a cable, for example to unmanaged equipment. Nothing is configured on the device."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documente une connexion qui n’est pas modélisée par un câble, par exemple vers un équipement non géré. Rien n’est configuré sur l’équipement."
+          }
+        }
+      }
+    },
+    "A port with a cable cannot be marked connected.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A port with a cable cannot be marked connected."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un port avec un câble ne peut pas être marqué connecté."
+          }
+        }
+      }
+    },
+    "The change was not confirmed. Check the port in NetBox before trying again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The change was not confirmed. Check the port in NetBox before trying again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La modification n’a pas été confirmée. Vérifiez le port dans NetBox avant de réessayer."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

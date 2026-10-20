@@ -87,7 +87,7 @@ import XCTest
         let fixture = FixtureDescriptions()
         let network = NetworkWriteFixture()
         for collection in TextEditTarget.Collection.allCases {
-            let id = collection == .sites ? 101 : collection == .racks ? 201 : collection == .devices ? 301 : collection == .virtualMachines ? 401 : collection == .prefixes ? 1 : collection == .vlans ? 22 : collection == .vlanGroups ? 31 : 11
+            let id = collection == .sites ? 101 : collection == .racks ? 201 : collection == .devices ? 301 : collection == .virtualMachines ? 401 : collection == .prefixes ? 1 : collection == .vlans ? 22 : collection == .vlanGroups ? 31 : collection == .cables ? 703 : 11
             var request = URLRequest(url: try XCTUnwrap(URL(string: "https://example.test/api/" + collection.rawValue + "\(id)/")))
             request.httpMethod = "PATCH"
             request.setValue("W/\"fixture-1\"", forHTTPHeaderField: "If-Match")
@@ -179,7 +179,7 @@ import XCTest
                 let target = TextEditTarget(collection: collection, id: 101)
                 if field.supports(collection) {
                     let snapshot = try await api.textSnapshot(for: target, field: field)
-                    let result = try await api.updateText(snapshot, to: field == .name ? "  réseau-01  " : collection == .vlans ? "reserved" : "offline")
+                    let result = try await api.updateText(snapshot, to: field == .name ? "  réseau-01  " : collection == .vlans ? "reserved" : collection == .cables ? "planned" : "offline")
                     XCTAssertEqual(result.object.value(for: field), field == .name ? "réseau-01" : collection == .vlans ? "reserved" : "offline")
                     XCTAssertEqual(result.object.description, "Original")
                     XCTAssertEqual(result.object.comments, "Original comments")
@@ -293,7 +293,7 @@ private final class EditProtocol: URLProtocol, @unchecked Sendable {
             if scenario == "lost" { client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost)); return }
             status = scenario == "forbidden" ? 403 : scenario == "conflict" ? 412 : 200
             if entry.key == "name" || entry.key == "status" {
-                guard url.path.contains("/dcim/devices/") || url.path.contains("/virtualization/virtual-machines/") || url.path.contains("/ipam/vlans/") || (entry.key == "name" && url.path.contains("/ipam/vlan-groups/")) else {
+                guard url.path.contains("/dcim/devices/") || url.path.contains("/virtualization/virtual-machines/") || url.path.contains("/ipam/vlans/") || (entry.key == "status" && url.path.contains("/dcim/cables/")) || (entry.key == "name" && url.path.contains("/ipam/vlan-groups/")) else {
                     client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse)); return
                 }
             }

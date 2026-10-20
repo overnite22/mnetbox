@@ -27,8 +27,12 @@ struct TextEditObject: Codable, Sendable {
     let label: String?
     let cableType: String?
     let color: String?
+    private let length: String?
+    private let hasLength: Bool
+    let lengthUnit: EditStatus?
+    private let hasLengthUnit: Bool
     struct EditStatus: Codable, Sendable { let value: String; let label: String? }
-    enum CodingKeys: String, CodingKey { case id, display, name, status, prefix, address, description, comments, label, color; case dnsName = "dns_name", cableType = "type" }
+    enum CodingKeys: String, CodingKey { case id, display, name, status, prefix, address, description, comments, label, color, length; case dnsName = "dns_name", cableType = "type", lengthUnit = "length_unit" }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(Int.self, forKey: .id)
@@ -45,6 +49,15 @@ struct TextEditObject: Codable, Sendable {
         label = (try? values.decodeIfPresent(String.self, forKey: .label)) ?? nil
         cableType = (try? values.decodeIfPresent(String.self, forKey: .cableType)) ?? nil
         color = (try? values.decodeIfPresent(String.self, forKey: .color)) ?? nil
+        hasLength = values.contains(.length)
+        if let text = try? values.decodeIfPresent(String.self, forKey: .length) { length = text }
+        else if let number = try? values.decodeIfPresent(Double.self, forKey: .length) { length = String(format: "%.2f", locale: Locale(identifier: "en_US_POSIX"), number) }
+        else {
+            if hasLength, try !values.decodeNil(forKey: .length) { throw APIError.invalidResponse }
+            length = nil
+        }
+        hasLengthUnit = values.contains(.lengthUnit)
+        lengthUnit = try values.decodeIfPresent(EditStatus.self, forKey: .lengthUnit)
     }
     func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
@@ -60,6 +73,8 @@ struct TextEditObject: Codable, Sendable {
         try values.encodeIfPresent(label, forKey: .label)
         try values.encodeIfPresent(cableType, forKey: .cableType)
         try values.encodeIfPresent(color, forKey: .color)
+        if hasLength { try values.encode(length, forKey: .length) }
+        if hasLengthUnit { try values.encode(lengthUnit, forKey: .lengthUnit) }
     }
     func value(for field: EditableTextField) -> String? {
         switch field {
@@ -71,12 +86,14 @@ struct TextEditObject: Codable, Sendable {
         case .label: label
         case .type: cableType
         case .color: color
+        case .length: hasLength ? EditableTextField.length.normalized(length ?? "") : nil
+        case .lengthUnit: hasLengthUnit ? lengthUnit?.value ?? "" : nil
         }
     }
     var title: String { display ?? name ?? prefix ?? address ?? "#\(id)" }
 }
 enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable {
-    case description, comments, dnsName = "dns_name", name, status, label, type, color
+    case description, comments, dnsName = "dns_name", name, status, label, type, color, length, lengthUnit = "length_unit"
     var id: String { rawValue }
     private var key: String {
         switch self {
@@ -88,6 +105,8 @@ enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable 
         case .label: "Label"
         case .type: "Type"
         case .color: "Color"
+        case .length: "Length"
+        case .lengthUnit: "Length unit"
         }
     }
     var title: String { L10n.text(key) }
@@ -99,18 +118,22 @@ enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable 
         case .status, .type: 50
         case .label: 100
         case .color: 6
+        case .length: 12
+        case .lengthUnit: 10
         case .description: 200
         case .dnsName: 255
         case .comments: 10000
         }
     }
     /// Fields edited by choosing a server value rather than typing text.
-    var isChoice: Bool { self == .status || self == .type || self == .color }
+    var isChoice: Bool { self == .status || self == .type || self == .color || self == .lengthUnit }
+    /// Empty optional values are cleared with JSON null rather than an empty string.
+    var clearsWithNull: Bool { self == .length || self == .lengthUnit }
     func supports(_ collection: TextEditTarget.Collection) -> Bool {
         switch self {
         case .name: [.devices, .virtualMachines, .vlans, .vlanGroups].contains(collection)
         case .status: [.devices, .virtualMachines, .vlans, .cables].contains(collection)
-        case .label, .type, .color: collection == .cables
+        case .label, .type, .color, .length, .lengthUnit: collection == .cables
         case .dnsName: collection == .ipAddresses
         case .description, .comments: true
         }
@@ -123,6 +146,7 @@ enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable 
         case (.status, .cables): ["connected", "planned", "decommissioning"]
         case (.type, .cables): CableCreationPlan.types
         case (.color, .cables): [""] + CableCreationPlan.colors
+        case (.lengthUnit, .cables): ["", "km", "m", "cm", "mi", "ft", "in"]
         default: []
         }
     }
@@ -130,12 +154,20 @@ enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable 
         switch self {
         case .type: return value.isEmpty ? L10n.text("Unspecified") : value
         case .color: return CableCreationPlan.colorName(value)
+        case .lengthUnit: return value.isEmpty ? L10n.text("None") : value
         case .status: return value.isEmpty ? L10n.text("Empty") : L10n.text(value.capitalized)
         default: return value.isEmpty ? L10n.text("Empty") : value
         }
     }
     func normalized(_ text: String) -> String {
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if self == .length {
+            // Canonical decimal form (12.50 → 12.5) so server replies compare exactly; a comma is accepted.
+            let dotted = value.replacingOccurrences(of: ",", with: ".")
+            guard !dotted.isEmpty, dotted.range(of: #"\A\d{1,6}(\.\d{1,2})?\z"#, options: .regularExpression) != nil,
+                  let decimal = Decimal(string: dotted, locale: Locale(identifier: "en_US_POSIX")) else { return dotted }
+            return NSDecimalNumber(decimal: decimal).stringValue
+        }
         return self == .dnsName || self == .color ? value.lowercased() : value
     }
     func validate(_ value: String, for collection: TextEditTarget.Collection? = nil) throws {
@@ -153,6 +185,10 @@ enum EditableTextField: String, CodingKey, CaseIterable, Identifiable, Sendable 
         if isChoice {
             guard let collection, choices(for: collection).contains(value) else { throw APIError.invalidStatus }
         }
+        if self == .length, !value.isEmpty {
+            guard value.range(of: #"\A\d{1,6}(\.\d{1,2})?\z"#, options: .regularExpression) != nil,
+                  let decimal = Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")), decimal > 0 else { throw APIError.invalidLength }
+        }
         if self == .label, value.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) { throw APIError.invalidName }
         // Match NetBox 4.7.2's DNSValidator, including its supported wildcard/underscore syntax.
         if self == .dnsName, !value.isEmpty,
@@ -167,7 +203,7 @@ struct TextEditPayload: Encodable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: EditableTextField.self)
         // Devices may be unnamed. VM validation rejects empty names before encoding.
-        if field == .name, value.isEmpty { try container.encodeNil(forKey: field) }
+        if (field == .name || field.clearsWithNull), value.isEmpty { try container.encodeNil(forKey: field) }
         else { try container.encode(value, forKey: field) }
     }
 }

@@ -109,6 +109,7 @@ struct PortPanelView: View {
     let onSelect: ((CableEndpointSelection) -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var cableSource: CableEndpointSelection?
+    @State private var markingPort: CableEndpointSelection?
     @State private var loadedFamily = PortPanelFamily.interfaces
     @State private var model: PaginatedListModel<PortPanelRecord, PortPanelQuery>
     @State private var query = PortPanelQuery(); @State private var refresh = UUID(); @State private var more = 0
@@ -197,13 +198,24 @@ struct PortPanelView: View {
                             Text(port.state.title).font(.caption).foregroundStyle(port.state.color)
                         }
                         if let type = port.type { Text(type.text).font(.subheadline).foregroundStyle(.secondary) }
-                        if let cableID = port.cable?.id { Label(L10n.identifier("Cable #%ld", cableID), systemImage: "link").font(.subheadline) }
+                        if let cableID = port.cable?.id {
+                            if onSelect == nil {
+                                // Quick access: edit, move an end or delete this port's cable.
+                                NavigationLink { CableDetailView(client: service.client, id: cableID) { refresh = UUID() } } label: {
+                                    Label(L10n.identifier("Cable #%ld", cableID), systemImage: "link").font(.subheadline)
+                                }.accessibilityIdentifier("panelOpenCable")
+                            } else { Label(L10n.identifier("Cable #%ld", cableID), systemImage: "link").font(.subheadline) }
+                        }
                         Divider()
                         if onSelect != nil {
                             Button("Choose this port") { onSelect?(endpoint(port)); dismiss() }.buttonStyle(.borderedProminent).disabled(!selectable(port)).accessibilityIdentifier("chooseCablePort")
                             if !selectable(port) { Text("Choose a free, compatible port different from the source.").font(.caption).foregroundStyle(.secondary) }
                         } else if selectable(port) {
                             Button("Connect a cable", systemImage: "cable.connector") { cableSource = endpoint(port) }.buttonStyle(.bordered).accessibilityIdentifier("connectCable")
+                        }
+                        if onSelect == nil, port.cable == nil, port.marked != nil, CableEndpointSelection.families.contains(query.family) {
+                            Button(port.marked == true ? "Remove connected mark" : "Mark as connected", systemImage: "checkmark.seal") { markingPort = endpoint(port) }
+                                .accessibilityIdentifier("panelMarkConnected")
                         }
                         NavigationLink { destination(port) } label: { Label("Open port details", systemImage: "arrow.up.forward.app") }
                             .accessibilityIdentifier("panelOpenDetails")
@@ -241,6 +253,7 @@ struct PortPanelView: View {
             do { if !query.search.isEmpty { try await Task.sleep(for: .milliseconds(300)) }; try Task.checkCancellation(); await model.reload(query: query); if !Task.isCancelled { loadedFamily = query.family } } catch { /* Superseded search. */ }
         }.task(id: more) { if more > 0 { await model.loadMore() } }
         .sheet(item: $cableSource, onDismiss: { refresh = UUID() }) { CableCreateView(client: service.client, source: $0) }
+        .sheet(item: $markingPort, onDismiss: { refresh = UUID() }) { MarkConnectedView(client: service.client, port: $0) }
         .onAppear { refresh = UUID() }
         .refreshable { await model.reload(query: query) }
     }

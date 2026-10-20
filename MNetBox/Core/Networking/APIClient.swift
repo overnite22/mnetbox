@@ -873,6 +873,62 @@ actor APIClient {
         return cable
     }
 
+    func cableRewireSnapshot(id: Int) async throws -> (CableObject, String) {
+        guard id > 0 else { throw APIError.invalidURL }
+        let (cable, tag): (CableObject, String?) = try await send(builder.get("dcim/cables/\(id)/"))
+        guard cable.id == id else { throw APIError.invalidResponse }
+        _ = try CableRewirePlan.ends(of: cable)
+        guard let tag, TextEditSnapshot.validETag(tag) else { throw APIError.missingETag }
+        return (cable, tag)
+    }
+    func checkCableRewire(_ input: CableRewirePlan) async throws {
+        let plan = try input.validated()
+        let (cable, tag) = try await cableRewireSnapshot(id: plan.cableID)
+        guard tag == plan.etag else { throw APIError.conflict }
+        try plan.matches(cable, moved: false)
+        let parent: EditReference = try await get("dcim/devices/\(plan.destination.deviceID)/")
+        guard parent.id == plan.destination.deviceID else { throw APIError.invalidReference }
+        let endpoint: CableEndpointSnapshot = try await get(plan.destination.path)
+        try endpoint.validate(plan.destination)
+    }
+    func rewireCable(_ input: CableRewirePlan) async throws -> CableObject {
+        let plan = try input.validated()
+        try await checkCableRewire(plan)
+        try Task.checkCancellation()
+        var request = try builder.get("dcim/cables/\(plan.cableID)/")
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(plan.etag, forHTTPHeaderField: "If-Match")
+        request.httpBody = try plan.body
+        // Never retry: a lost reply does not tell whether the end already moved.
+        let (cable, _): (CableObject, String?) = try await send(request)
+        try plan.matches(cable, moved: true)
+        return cable
+    }
+
+    func markConnectedSnapshot(_ port: CableEndpointSelection) async throws -> (CableEndpointSnapshot, String) {
+        try port.validate()
+        let (snapshot, tag): (CableEndpointSnapshot, String?) = try await send(builder.get(port.path))
+        guard snapshot.id == port.id, snapshot.device.id == port.deviceID, snapshot.name == port.name else { throw APIError.invalidReference }
+        guard let tag, TextEditSnapshot.validETag(tag) else { throw APIError.missingETag }
+        return (snapshot, tag)
+    }
+    /// Toggles mark_connected on one free port. A cabled port cannot be marked; the reviewed ETag must still hold.
+    func setMarkConnected(_ port: CableEndpointSelection, etag: String, to value: Bool) async throws -> CableEndpointSnapshot {
+        let (fresh, tag) = try await markConnectedSnapshot(port)
+        guard tag == etag, fresh.marked != value else { throw APIError.conflict }
+        guard !value || fresh.cable == nil else { throw CableCreationError.occupied }
+        try Task.checkCancellation()
+        var request = try builder.get(port.path)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(etag, forHTTPHeaderField: "If-Match")
+        request.httpBody = try JSONEncoder().encode(["mark_connected": value])
+        let (reply, _): (CableEndpointSnapshot, String?) = try await send(request)
+        guard reply.id == port.id, reply.device.id == port.deviceID, reply.name == port.name, reply.marked == value, !value || reply.cable == nil else { throw APIError.invalidResponse }
+        return reply
+    }
+
     func checkInterfaceCreation(_ input: InterfaceCreationPlan) async throws {
         let plan = try input.validated()
         let parent: EditReference = try await get(plan.kind.parentKind.path + "\(plan.parentID)/")

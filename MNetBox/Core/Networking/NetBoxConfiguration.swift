@@ -38,7 +38,7 @@ enum APIError: Error, LocalizedError, Equatable {
     case unsupportedPrefixScope, ipamMoveBlocked, unsupportedVLANScope, vlanIdentityBlocked, groupMembersBlocked
     case deletionBlocked
     case requiredInterfaceName, duplicateInterface
-    case requiredName, invalidName, invalidStatus
+    case requiredName, invalidName, invalidStatus, invalidLength
     case invalidVID, requiredVLANName, duplicateVLAN, duplicateVLANGroup, invalidMAC, duplicateMAC, primaryMACBlocked, macAssignmentRejected
     case invalidMTU, invalidReference, requiredRole, invalidWeight, duplicateContext, invalidImage
     case transport, keychain(Int32), missingETag, descriptionTooLong, invalidDNSName, textTooLong(Int)
@@ -75,6 +75,7 @@ enum APIError: Error, LocalizedError, Equatable {
         case .requiredName: L10n.text("A virtual machine must have a name.")
         case .invalidName: L10n.text("The name must not contain line breaks or control characters.")
         case .invalidStatus: L10n.text("Choose a supported status for this object.")
+        case .invalidLength: L10n.text("Enter a positive length with at most two decimals, or leave it empty.")
         case .invalidCIDR: L10n.text("Enter an IPv4 or IPv6 address with its prefix length, for example 192.0.2.10/24 or 2001:db8::1/64.")
         case .networkHostBits: L10n.text("A prefix must use its network address. For example, use 192.0.2.0/24 rather than 192.0.2.10/24.")
         case .duplicateIPAM: L10n.text("This prefix or IP address already exists in the selected VRF. Review the existing object before creating another.")

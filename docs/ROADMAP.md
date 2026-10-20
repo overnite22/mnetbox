@@ -8,14 +8,20 @@ Scope agreed on 2026-10-03: a native SwiftUI iPhone app for iOS 27, linked navig
 
 Livraisons plus grosses : chaque version regroupe plusieurs fonctionnalités, avec tests unitaires, scénarios UI et une suite UI complète avant publication. Toute écriture garde le même contrat : relecture Avant/Après, ETag, confirmation explicite, une seule tentative, jamais d'action implicite. La validation sur le vrai serveur reste faite par l'utilisateur.
 
-| Version | Thème | Contenu prévu |
+| Version | Thème | Contenu |
 | --- | --- | --- |
 | **0.16.0 (34)** | Suppression de câble | Livrée et validée sur le serveur réel le 2026-10-20. |
-| **0.17.0 (35)** | Câblage complet | Câbles console ↔ serveur console, alimentation ↔ prise (règles de compatibilité NetBox) ; édition relue du libellé, statut, type, couleur, description et commentaires d'un câble. |
-| **0.18.0** | Recâblage et terrain | Recâblage relu d'une extrémité (ancienne → nouvelle, sans déconnexion implicite) ; longueur et unité ; actions rapides depuis le port sélectionné (ouvrir, modifier, supprimer son câble) ; bascule « marqué connecté ». |
-| **0.19.0** | IPAM pratique | Prochaine IP / prochain préfixe disponible (endpoints NetBox natifs) avec relecture ; assignation directe d'une nouvelle IP à une interface ; consultation des plages d'IP ; taux d'utilisation des préfixes si la définition NetBox est confirmée. |
-| **0.20.0** | Inventaire terrain | Scan QR / code-barres (caméra, permission explicite) pour ouvrir un équipement par nom, n° de série ou asset tag ; création d'équipement relue (site, baie, position, type, rôle) ; affichage des tags et champs personnalisés. |
-| **0.21.0** | Comptes et maintenance | Validation comptes restreints (jalon 30) ; suppression de tenant (jalon 31) ; photos plus anciennes paginées ; journal NetBox (consultation et ajout d'entrées). |
+| **0.17.0 (35)** | Câblage complet | Câbles console ↔ serveur console, alimentation ↔ prise ; édition relue du libellé, statut, type, couleur, description et commentaires d'un câble. |
+| **0.18.0** | Grosse mise à jour (ex-0.18 → 0.21) | Voir les lots ci-dessous, livrés ensemble. |
+
+**0.18.0 — lots, construits et testés l'un après l'autre, publiés ensemble :**
+
+- **A. Câblage terrain** : recâblage relu d'une extrémité (ancienne → nouvelle, sans déconnexion implicite) ; longueur et unité ; actions rapides depuis le port sélectionné (ouvrir, modifier, supprimer son câble) ; bascule « marqué connecté ».
+- **B. IPAM pratique** : prochaine IP et prochain préfixe disponibles (endpoints NetBox natifs) avec relecture ; assignation directe d'une nouvelle IP à une interface ; consultation des plages d'IP.
+- **C. Inventaire terrain** : scan QR / code-barres (caméra, permission explicite) pour ouvrir un équipement par nom, n° de série ou asset tag ; création d'équipement relue ; tags et champs personnalisés en lecture.
+- **D. Comptes et maintenance** : suppression de tenant (jalon 31) ; photos plus anciennes paginées ; journal NetBox (consultation et ajout) ; recette comptes restreints (jalon 30, manuelle).
+
+Ordre interne indicatif : A → B → C → D. Un IPA de prévisualisation peut être fourni entre deux lots ; seule la version complète fait l'objet d'une Release.
 
 Les détails historiques des jalons 0 à 34 suivent.
 

@@ -102,6 +102,8 @@ struct TextEditView: View {
                                         }
                                         ForEach(choices, id: \.self) { Text(model.field.displayValue($0)).tag($0) }
                                     }.pickerStyle(.menu)
+                                } else if model.field == .length {
+                                    TextField(model.field.title, text: $model.draft).keyboardType(.decimalPad)
                                 } else if model.field == .name || model.field == .label {
                                     TextField(model.field.title, text: $model.draft)
                                         .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
@@ -115,7 +117,9 @@ struct TextEditView: View {
                                 .textInputAutocapitalization(model.field == .dnsName || model.field == .name || model.field == .label ? .never : .sentences)
                                 .autocorrectionDisabled(model.field == .dnsName || model.field == .name || model.field == .label)
                                 .disabled(model.isSaving).accessibilityIdentifier("\(model.field.rawValue)Draft")
-                            if !model.field.isChoice {
+                            if model.field == .length {
+                                Text("Positive number, up to two decimals. Empty clears the length.").font(.caption).foregroundStyle(.secondary)
+                            } else if !model.field.isChoice {
                                 Text(L10n.format("Maximum %ld characters", model.target.collection == .vlanGroups && model.field == .name ? 100 : model.field.limit)).font(.caption).foregroundStyle(.secondary)
                             }
                             if model.field == .name {

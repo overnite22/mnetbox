@@ -146,6 +146,7 @@ struct CableDetailView: View {
     @State private var deleting = false
     @State private var deleted = false
     @State private var editingField: EditableTextField?
+    @State private var movingSide: CableSide?
     init(client: APIClient, id: Int, onDeleted: (() -> Void)? = nil) {
         self.client = client
         self.onDeleted = onDeleted
@@ -173,7 +174,8 @@ struct CableDetailView: View {
                     DetailField(title: "Status", value: cable.status?.text ?? "—", action: { editingField = .status }, identifier: "cableField-status")
                     DetailField(title: "Type", value: EditableTextField.type.displayValue(cable.type ?? ""), action: { editingField = .type }, identifier: "cableField-type")
                     DetailField(title: "Color", value: EditableTextField.color.displayValue(cable.color ?? ""), action: { editingField = .color }, identifier: "cableField-color")
-                    DetailField(title: "Length", value: "\(cable.length?.text ?? "—") \(cable.lengthUnit?.text ?? "")")
+                    DetailField(title: "Length", value: cable.length?.text ?? "—", action: { editingField = .length }, identifier: "cableField-length")
+                    DetailField(title: "Length unit", value: cable.lengthUnit?.text ?? L10n.text("None"), action: { editingField = .lengthUnit }, identifier: "cableField-lengthUnit")
                 }
                 Section("Connection overview") { CableDiagram(client: client, cable: cable) }
                 Section("Side A") { terminations(cable.aTerminations ?? []) }
@@ -187,6 +189,10 @@ struct CableDetailView: View {
             }
         }
         .navigationTitle("Cable").navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $movingSide, onDismiss: { refreshID = UUID() }) { side in
+            // The originating list or port no longer holds this cable once an end moved.
+            if let cable = model.object { CableRewireView(client: client, cableID: cable.id, side: side) { onDeleted?() } }
+        }
         .sheet(item: $editingField, onDismiss: { refreshID = UUID() }) { field in
             if let cable = model.object { TextEditView(client: client, target: TextEditTarget(collection: .cables, id: cable.id), field: field) }
         }
@@ -196,8 +202,12 @@ struct CableDetailView: View {
         .toolbar {
             if model.object != nil, !model.isLoading, model.errorMessage == nil {
                 Menu {
-                    ForEach([EditableTextField.label, .status, .type, .color, .description, .comments]) { field in
+                    ForEach([EditableTextField.label, .status, .type, .color, .length, .lengthUnit, .description, .comments]) { field in
                         Button(field.editTitle) { editingField = field }.accessibilityIdentifier("editCable-\(field.rawValue)")
+                    }
+                    Divider()
+                    ForEach(CableSide.allCases) { side in
+                        Button(L10n.format("Move end %@", side.title), systemImage: "arrow.triangle.swap") { movingSide = side }.accessibilityIdentifier("moveCableEnd-\(side.rawValue)")
                     }
                 } label: { Label("Edit", systemImage: "pencil") }.accessibilityIdentifier("editCable")
                 Button("Delete cable", systemImage: "trash", role: .destructive) { deleting = true }.accessibilityIdentifier("deleteCable")

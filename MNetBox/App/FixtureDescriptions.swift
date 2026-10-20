@@ -18,7 +18,7 @@ final class FixtureDescriptions: @unchecked Sendable {
                   let data = requestBody(request),
                   let patch = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any], (patch.count == 1 || (patch.count == 2 && Set(patch.keys) == ["assigned_object_type", "assigned_object_id"]) || (patch.count == 3 && Set(patch.keys) == ["mode", "untagged_vlan", "tagged_vlans"])),
                   let entry = patch.first,
-                  let original = InventoryFixture.response(url) ?? IPAMFixture.response(url) ?? ComponentFixture.response(url), original.0 == 200,
+                  let original = InventoryFixture.response(url) ?? IPAMFixture.response(url) ?? ComponentFixture.response(url) ?? CableBrowseFixture.response(url), original.0 == 200,
                   let originalData = original.1.data(using: .utf8),
                   var object = values[url.path] ?? (try? JSONSerialization.jsonObject(with: originalData) as? [String: Any]) else { return (400, "{}") }
             if patch.count == 3, structuredCollection?.isInterface == true {
@@ -49,15 +49,15 @@ final class FixtureDescriptions: @unchecked Sendable {
                 }
             } else if let field = EditableTextField(rawValue: entry.key), let collection = textCollection, field.supports(collection) {
                 let value: String
-                if field == .name, entry.value is NSNull { value = "" }
+                if (field == .name || field.clearsWithNull), entry.value is NSNull { value = "" }
                 else if let text = entry.value as? String { value = field.normalized(text) }
                 else { return (400, "{}") }
                 guard (try? field.validate(value, for: collection)) != nil else { return (400, "{}") }
-                if field == .status { object["status"] = ["value": value, "label": value.capitalized] }
+                if field == .status || field == .lengthUnit { object[field.rawValue] = value.isEmpty && field.clearsWithNull ? NSNull() : ["value": value, "label": value.capitalized] as Any }
                 else if field == .name {
                     object["name"] = value.isEmpty ? NSNull() : value as Any
                     object["display"] = value.isEmpty ? "Unnamed device" : value
-                } else { object[field.rawValue] = value }
+                } else { object[field.rawValue] = value.isEmpty && field.clearsWithNull ? NSNull() : value as Any }
             } else if let field = StructuredEditField(rawValue: entry.key), let collection = structuredCollection, field.supports(collection) {
                 if field.isText, let value = entry.value as? String {
                     guard (try? StructuredEditValue.text(value).validate(field: field, target: StructuredEditTarget(collection: collection, id: id, parentID: 301))) != nil else { return (400, "{}") }

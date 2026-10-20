@@ -10,6 +10,9 @@ struct IPAMDetailView: View {
     @State private var ipamField: IPAMEditField?
     @State private var structuredField: StructuredEditField?
     @State private var editingField: EditableTextField?
+    @State private var allocating: NextAvailableMode?
+    @State private var pendingCreation: IPAMCreationPrefill?
+    @State private var creation: IPAMCreationPrefill?
     private let service: IPAMService
     private let kind: IPAMKind
     init(service: IPAMService, id: Int, onDeleted: (() -> Void)? = nil) {
@@ -114,6 +117,19 @@ struct IPAMDetailView: View {
         }
         .navigationTitle(L10n.text(kind == .prefixes ? "Prefix" : "IP address"))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $allocating, onDismiss: { creation = pendingCreation; pendingCreation = nil }) { mode in
+            if let object = model.object, let text = object.prefix, let parent = try? IPAMCIDR(text, network: true) {
+                NextAvailableView(client: service.client, prefixID: object.id, parent: parent, vrf: object.vrf, mode: mode) { pendingCreation = $0 }
+            }
+        }
+        .sheet(item: $creation, onDismiss: { refreshID = UUID() }) { prefill in
+            if let object = model.object {
+                IPAMCreateView(client: service.client, kind: prefill.kind,
+                               vrf: object.vrf.flatMap { vrf in vrf.id.map { ReferenceSelection(id: $0, title: vrf.text) } },
+                               tenant: object.tenant.flatMap { tenant in tenant.id.map { ReferenceSelection(id: $0, title: tenant.text) } },
+                               cidr: prefill.cidr)
+            }
+        }
         .sheet(item: $ipamField, onDismiss: { refreshID = UUID() }) { field in
             if let object = model.object { IPAMEditView(client: service.client, kind: kind, id: object.id, field: field) }
         }
@@ -134,6 +150,11 @@ struct IPAMDetailView: View {
         }
         .toolbar {
             Menu {
+                if kind == .prefixes {
+                    Button("Next available IP", systemImage: "plus.circle") { allocating = .ip }.accessibilityIdentifier("nextAvailableIP")
+                    Button("Next available prefix", systemImage: "plus.square.on.square") { allocating = .prefix }.accessibilityIdentifier("nextAvailablePrefix")
+                    Divider()
+                }
                 Button("Delete object", role: .destructive) { deleting = true }.accessibilityIdentifier("deleteObject")
                 Button("Address / prefix") { ipamField = .cidr }
                 Button("VRF") { ipamField = .vrf }

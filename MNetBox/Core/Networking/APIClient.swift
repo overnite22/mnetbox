@@ -929,6 +929,17 @@ actor APIClient {
         return reply
     }
 
+    func nextAvailableIP(prefixID: Int, parent: IPAMCIDR, vrfID: Int?) async throws -> IPAMCIDR? {
+        guard prefixID > 0 else { throw APIError.invalidURL }
+        let values: [IPAMAvailability.AvailableIP] = try await get("ipam/prefixes/\(prefixID)/available-ips/", query: [.init(name: "limit", value: "1")])
+        return try IPAMAvailability.firstIP(values, parent: parent, vrfID: vrfID)
+    }
+    func nextAvailablePrefix(prefixID: Int, parent: IPAMCIDR, vrfID: Int?, length: Int) async throws -> IPAMCIDR? {
+        guard prefixID > 0 else { throw APIError.invalidURL }
+        let values: [IPAMAvailability.AvailablePrefix] = try await get("ipam/prefixes/\(prefixID)/available-prefixes/")
+        return try IPAMAvailability.firstPrefix(values, parent: parent, vrfID: vrfID, length: length)
+    }
+
     func checkInterfaceCreation(_ input: InterfaceCreationPlan) async throws {
         let plan = try input.validated()
         let parent: EditReference = try await get(plan.kind.parentKind.path + "\(plan.parentID)/")

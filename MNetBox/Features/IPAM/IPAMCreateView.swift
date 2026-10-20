@@ -9,9 +9,9 @@ import SwiftUI
     private(set) var attempted = false
     private(set) var errorMessage: String?
     let client: APIClient
-    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil, assignment: InterfaceSelection? = nil) {
+    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil, assignment: InterfaceSelection? = nil, cidr: String = "") {
         self.client = client
-        draft = IPAMCreationDraft(kind: kind, vrf: vrf?.id == 0 ? nil : vrf, tenant: tenant, assignment: assignment)
+        draft = IPAMCreationDraft(kind: kind, cidr: cidr, vrf: vrf?.id == 0 ? nil : vrf, tenant: tenant, assignment: assignment)
     }
     var isWorking: Bool { isChecking || isSaving }
     var canReview: Bool { !isWorking && !attempted && (try? draft.plan()) != nil }
@@ -53,8 +53,8 @@ struct IPAMCreateView: View {
     @FocusState private var focused: Field?
     private enum Operation: Equatable { case idle, review(UUID), create(UUID) }
     @State private var operation = Operation.idle
-    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil, assignment: InterfaceSelection? = nil) {
-        _model = State(initialValue: IPAMCreateModel(client: client, kind: kind, vrf: vrf, tenant: tenant, assignment: assignment))
+    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil, assignment: InterfaceSelection? = nil, cidr: String = "") {
+        _model = State(initialValue: IPAMCreateModel(client: client, kind: kind, vrf: vrf, tenant: tenant, assignment: assignment, cidr: cidr))
     }
     private var title: String { L10n.text(model.draft.kind == .prefixes ? "New prefix" : "New IP address") }
     private var verificationQuery: IPAMQuery {

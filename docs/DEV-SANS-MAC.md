@@ -42,6 +42,8 @@ Sur l'iPhone, une seule fois :
 1. Télécharger l'artefact `MNetBox-unsigned-ipa` du run et le dézipper.
 2. iPhone branché en USB, glisser l'IPA dans Sideloadly, saisir l'Apple ID, puis **Start**.
 
+Alternative depuis le PC : **iloader** installe aussi directement une IPA (testé le 2026-10-20). En octobre 2026, la connexion Apple ID dans SideStore sur l'iPhone peut échouer avec l'erreur **-80045** (blocage Apple des serveurs Anisette) : utiliser alors iloader ou Sideloadly depuis le PC.
+
 **Limites de l'Apple ID gratuit** : la signature expire au bout de **7 jours** (activer l'actualisation automatique de Sideloadly en Wi-Fi), et 3 apps au maximum. Si l'identité de signature change, le Keychain n'est plus lisible et il faut ressaisir la connexion NetBox.
 
 ## 3 bis. Installer depuis l'iPhone, sans PC (SideStore)

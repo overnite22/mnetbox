@@ -56,7 +56,7 @@ final class CableEditingTests: XCTestCase {
         XCTAssertEqual(try target.path, "dcim/cables/7/")
     }
     func testEachFieldSendsOneValueWithPairedETag() async throws {
-        for (field, value) in [(EditableTextField.label, "Uplink A"), (.status, "planned"), (.type, "cat6a"), (.color, "00aa66"), (.color, ""), (.description, "Rack 2")] {
+        for (field, value) in [(EditableTextField.label, "Uplink A"), (.status, "planned"), (.type, "cat6a"), (.color, "00aa66"), (.color, ""), (.description, "Rack 2"), (.length, "12.5"), (.lengthUnit, "ft")] {
             CableEditProtocol.state.reset()
             let api = try client(), snapshot = try await api.textSnapshot(for: target, field: field)
             let result = try await api.updateText(snapshot, to: value)
@@ -95,7 +95,7 @@ private final class CableEditProtocol: URLProtocol, @unchecked Sendable {
         func reset() {
             lock.lock(); storedRequests = []
             storedCable = ["id": 7, "display": "#7", "label": "LAN-7", "type": "cat6", "color": "0088ff", "status": ["value": "connected", "label": "Connected"],
-                           "description": "", "comments": "", "a_terminations": [], "b_terminations": []]
+                           "description": "", "comments": "", "length": "2.50", "length_unit": ["value": "m", "label": "Meters"], "a_terminations": [], "b_terminations": []]
             lock.unlock()
         }
     }
@@ -117,7 +117,7 @@ private final class CableEditProtocol: URLProtocol, @unchecked Sendable {
         Self.state.add(request)
         var cable = Self.state.cable
         if request.httpMethod == "PATCH", let body = Self.body(request) {
-            for (key, value) in body { cable[key] = key == "status" ? ["value": value, "label": (value as? String)?.capitalized ?? ""] : value }
+            for (key, value) in body { cable[key] = (key == "status" || key == "length_unit") ? ["value": value, "label": (value as? String)?.capitalized ?? ""] : value }
             Self.state.cable = cable
         }
         let headers = ["Content-Type": "application/json", "ETag": "W/\"cable-1\""]

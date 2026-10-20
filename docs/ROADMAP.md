@@ -23,6 +23,8 @@ Livraisons plus grosses : chaque version regroupe plusieurs fonctionnalités, av
 
 Ordre interne indicatif : A → B → C → D. Un IPA de prévisualisation peut être fourni entre deux lots ; seule la version complète fait l'objet d'une Release.
 
+**Reprise du lot A — 2026-10-20 :** recâblage, longueur/unité, accès au câble et marque de connexion implémentés ; tests de modèle et transport synthétique ajoutés. Validation Xcode/CI en cours. Les lots B, C et D restent à réaliser ; aucune Release 0.18.0 publiée.
+
 Les détails historiques des jalons 0 à 34 suivent.
 
 ### 34b/34c — Câblage complet (0.17.0 build 35, implémenté ; validation réelle en attente)

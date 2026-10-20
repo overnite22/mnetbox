@@ -275,3 +275,13 @@ On a disposable test cable (for example one created with build 33), open Invento
 Console/power: on a device with a free console port, open Port panel → Console ports → select it → Connect a cable; the destination panel must only offer console server ports or front/rear ports. Same for a power port (outlets only). Create one disposable cable and check both endpoints in NetBox, then delete it from the app.
 
 Editing: open a cable → Edit (or tap a field) → change label, status, type, color, description or comments one at a time. Review Before/After, Cancel once, then confirm. Compare the change log in NetBox: exactly one field changed per save. Modifying the cable in NetBox between review and confirmation must produce a conflict without saving.
+
+## Lot A — Cable field work (implementation pending CI validation)
+
+Cable detail → Edit → Move end A/B supports one known device termination on each side. Choose a free compatible destination, review the current/new end and the kept end, then confirm one PATCH containing only the moved side. The cable ID, both typed endpoint IDs, device IDs, port names and paired ETag are checked again; the destination must still have explicit null cable, false occupancy/connected mark and a supported physical type. Multi-termination, unknown and unsupported endpoints are refused. The old endpoint becomes free through NetBox's cable update; the app never sends a separate disconnect. A lost or invalid reply prevents a second mutation in the same form.
+
+Cable length and unit use the existing single-field reviewed editor. Length accepts a positive decimal with at most two decimal places (a comma is normalized); empty sends JSON null. Units are km/m/cm/mi/ft/in or null. Only the selected field is patched; NetBox remains authoritative for constraints between length and unit.
+
+The selected port links to its cable detail. Uncabled device ports can add/remove the documented connected mark, with server/port identity, Before/After, a fresh paired ETag and one boolean-only PATCH. A cabled port cannot be marked connected. This changes inventory metadata, never device configuration. Conflicts, permissions and uncertain replies require checking NetBox before reopening the form.
+
+Real-server acceptance: use a disposable cable with two single terminations; cancel a move first, then move each side to a free compatible port and check that only the previous port is freed. Try an occupied destination and a concurrent edit. Set/clear length and unit individually. Add/remove a connected mark on an uncabled port and confirm that creating a cable is blocked while marked. No automated test writes to the real server.

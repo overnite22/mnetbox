@@ -164,6 +164,11 @@ struct InventoryDetailView: View {
                 if let tags = object.tags, !tags.isEmpty {
                     Section("Tags") { Text(tags.map(\.text).joined(separator: ", ")) }
                 }
+                if let custom = object.customFields, !custom.entries.isEmpty {
+                    Section("Custom fields") {
+                        ForEach(custom.entries) { DetailField(title: $0.title, value: $0.text, identifier: "customField-\($0.key)") }
+                    }.accessibilityIdentifier("customFields")
+                }
                 Section("Comments") {
                     DetailField(title: "Comments", value: object.comments?.isEmpty == false ? object.comments ?? "" : "—", action: { editingField = .comments }, identifier: "inventoryField-Comments")
                         .disabled(model.isLoading)

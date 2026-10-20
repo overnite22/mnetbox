@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GlobalSearchView: View {
+    @State private var scanning = false
     let client: APIClient
     @State private var search = ""
     @State private var committedSearch = ""
@@ -34,6 +35,8 @@ struct GlobalSearchView: View {
             }
         }
         .navigationTitle("Search")
+        .toolbar { Button("Scan a label", systemImage: "qrcode.viewfinder") { scanning = true }.accessibilityIdentifier("openScanner") }
+        .sheet(isPresented: $scanning) { ScanLookupView(client: client) }
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search all NetBox")
         .task(id: trimmedSearch) {
             guard !trimmedSearch.isEmpty else { committedSearch = ""; return }

@@ -83,6 +83,7 @@ struct InventoryObject: Codable, Sendable, Identifiable {
     let description: String?
     let comments: String?
     let tags: [NetBoxLabel]?
+    let customFields: NetBoxCustomFields?
 
     var title: String {
         if let name, !name.isEmpty { return name }
@@ -94,7 +95,7 @@ struct InventoryObject: Codable, Sendable, Identifiable {
         case id, name, display, status, tenant, site, location, region, group, role, rack, platform, cluster, device
         case face, position, vcpus, memory, disk, serial, facility, description, comments, tags
         case deviceType = "device_type", primaryIP4 = "primary_ip4", primaryIP6 = "primary_ip6"
-        case height = "u_height", assetTag = "asset_tag", physicalAddress = "physical_address", timeZone = "time_zone"
+        case height = "u_height", assetTag = "asset_tag", physicalAddress = "physical_address", timeZone = "time_zone", customFields = "custom_fields"
     }
 }
 

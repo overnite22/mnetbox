@@ -22,6 +22,10 @@ on:
         description: Build unsigned IPA for sideloading
         type: boolean
         default: true
+      release:
+        description: Publish the IPA as a GitHub release (needs unit tests and IPA)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,6 +51,8 @@ jobs:
     needs: source-check
     runs-on: macos-latest
     timeout-minutes: 90
+    outputs:
+      ipa: ${{ steps.ipa.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -134,3 +140,35 @@ jobs:
           name: MNetBox-unsigned-ipa
           path: build/MNetBox-unsigned.ipa
           retention-days: 7
+
+  release:
+    # Only job with write access: publishes the already built IPA, runs no project code.
+    if: inputs.release && inputs.unit_tests && inputs.ipa && !cancelled() && needs.ios.outputs.ipa == 'success'
+    needs: ios
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: MNetBox.xcodeproj
+      - uses: actions/download-artifact@v4
+        with:
+          name: MNetBox-unsigned-ipa
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(grep -o "MARKETING_VERSION = [0-9.]*" MNetBox.xcodeproj/project.pbxproj | head -1 | cut -d" " -f3)
+          BUILD=$(grep -o "CURRENT_PROJECT_VERSION = [0-9]*" MNetBox.xcodeproj/project.pbxproj | head -1 | cut -d" " -f3)
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$BUILD" =~ ^[0-9]+$ ]]
+          TAG="v$VERSION-$BUILD"
+          mv MNetBox-unsigned.ipa "MNetBox-$VERSION-$BUILD.ipa"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "MNetBox-$VERSION-$BUILD.ipa" --clobber
+          else
+            gh release create "$TAG" "MNetBox-$VERSION-$BUILD.ipa" --target "$GITHUB_SHA" \
+              --title "MNetBox $VERSION ($BUILD)" \
+              --notes "IPA non signé, à installer avec SideStore ou Sideloadly (Apple ID gratuit). Voir docs/DEV-SANS-MAC.md."
+          fi

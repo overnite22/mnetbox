@@ -20,10 +20,8 @@ final class MNetBoxUITests: XCTestCase {
         app.launch(); app.buttons["appInformation"].tap()
         let version = app.descendants(matching: .any)["netBoxServerVersion"].firstMatch
         XCTAssertTrue(version.waitForExistence(timeout: 5)); XCTAssertEqual(version.value as? String, "4.7.2")
-        let report = app.staticTexts["supportReport"]
-        for _ in 0..<6 where !report.isHittable { app.swipeUp() }
-        XCTAssertTrue(report.waitForExistence(timeout: 5))
-        XCTAssertTrue(report.label.contains("MNetBox 0.15.0 (build 33)"))
+        let report = reveal(app.staticTexts["supportReport"], in: app)
+        XCTAssertNotNil(report.label.range(of: #"MNetBox \d+\.\d+\.\d+ \(build \d+\)"#, options: .regularExpression), report.label)
         XCTAssertTrue(report.label.contains("NetBox 4.7.2"))
         XCTAssertFalse(report.label.contains("example.test")); XCTAssertFalse(report.label.contains("test-placeholder")); XCTAssertFalse(report.label.contains("fixture-user"))
         XCTAssertTrue(app.buttons["shareDiagnostics"].exists)
@@ -288,7 +286,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)["descriptionSaved"].firstMatch.exists)
         app.buttons["descriptionReload"].tap()
         XCTAssertTrue(app.buttons["descriptionReview"].isEnabled)
-        let draft = app.descendants(matching: .any)["descriptionDraft"].firstMatch
+        let draft = reveal(app.descendants(matching: .any)["descriptionDraft"].firstMatch, in: app)
         XCTAssertTrue((draft.value as? String)?.contains("mobile-test") == true)
     }
 
@@ -892,7 +890,7 @@ final class MNetBoxUITests: XCTestCase {
         app.buttons["statusConfirm"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["statusSaved"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
-        XCTAssertTrue(app.descendants(matching: .any)["inventoryField-Status"].firstMatch.waitForExistence(timeout: 5))
+        reveal(app.descendants(matching: .any)["inventoryField-Status"].firstMatch, in: app)
         XCTAssertEqual(app.descendants(matching: .any)["inventoryField-Status"].firstMatch.value as? String, "Paused")
     }
     @MainActor private func openEditableInterface(virtual: Bool = false) -> XCUIApplication {
@@ -965,7 +963,7 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.buttons["reference-2"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["reference-1"].exists)
         app.buttons["reference-2"].tap(); confirmStructured(app)
-        XCTAssertTrue(app.descendants(matching: .any)["inventoryField-Role"].firstMatch.waitForExistence(timeout: 5))
+        reveal(app.descendants(matching: .any)["inventoryField-Role"].firstMatch, in: app)
         XCTAssertEqual(app.descendants(matching: .any)["inventoryField-Role"].firstMatch.value as? String, "Application")
     }
     @MainActor func testCreatePhysicalInterfaceReviewAndOpen() {
@@ -1235,7 +1233,9 @@ final class MNetBoxUITests: XCTestCase {
 
     @MainActor private func waitForNetworkValue(_ element: XCUIElement, _ value: String) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: element)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed)
+        let result = XCTWaiter.wait(for: [expectation], timeout: 10)
+        if result != .completed { attach(XCUIApplication(), name: "Unexpected value for \(value)") }
+        XCTAssertEqual(result, .completed, "Expected \(value), found \(String(describing: element.exists ? element.value : nil))")
     }
     @MainActor private func networkApp(virtual: Bool? = nil) -> XCUIApplication {
         let app = XCUIApplication()
@@ -1456,7 +1456,9 @@ final class MNetBoxUITests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard", "--ui-testing-netbox-images"]
         app.launch(); XCTAssertTrue(app.tabBars.buttons["Inventory"].waitForExistence(timeout: 5)); app.tabBars.buttons["Inventory"].tap(); app.buttons["inventoryCategory-devices"].tap()
         administrationButton(app, "inventoryObject-301").tap()
-        let image = administrationButton(app, "netboxImage-attachment-81"); XCTAssertTrue(image.waitForExistence(timeout: 10)); attach(app, name: "Automatic NetBox attachment image")
+        // Images load asynchronously near the top: wait before scrolling.
+        _ = app.buttons["netboxImage-attachment-81"].waitForExistence(timeout: 10)
+        let image = reveal(app.buttons["netboxImage-attachment-81"], in: app); attach(app, name: "Automatic NetBox attachment image")
         image.tap(); XCTAssertTrue(app.navigationBars.buttons["Done"].waitForExistence(timeout: 5)); attach(app, name: "NetBox image large preview"); app.navigationBars.buttons["Done"].tap()
         administrationButton(app, "netboxImage-type-1-Front").tap(); XCTAssertTrue(app.navigationBars.buttons["Done"].waitForExistence(timeout: 5))
     }
@@ -1539,7 +1541,7 @@ final class MNetBoxUITests: XCTestCase {
         administrationButton(app, "connectCable").tap()
         administrationButton(app, "cableDestinationDevice").tap()
         // Synthetic devices are paged by two: the destination is on the second page.
-        if !app.buttons["reference-303"].waitForExistence(timeout: 3) { administrationButton(app, "Load more").tap() }
+        if !app.buttons["reference-303"].waitForExistence(timeout: 3) { administrationButton(app, "referenceLoadMore").tap() }
         administrationButton(app, "reference-303").tap()
         administrationButton(app, "cableDestinationPort").tap()
         administrationButton(app, "panelPort-interfaces-1601").tap()

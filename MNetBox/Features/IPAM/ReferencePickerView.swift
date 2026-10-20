@@ -65,7 +65,7 @@ struct ReferencePickerView: View {
             }
             if model.next != nil {
                 if model.isLoadingMore { ProgressView() }
-                else { Button("Load more") { pageRequest += 1 }.disabled(model.isLoading) }
+                else { Button("Load more") { pageRequest += 1 }.disabled(model.isLoading).accessibilityIdentifier("referenceLoadMore") }
             }
         }
         .navigationTitle(L10n.text(title)).searchable(text: $search)

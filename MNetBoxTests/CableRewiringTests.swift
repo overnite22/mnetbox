@@ -85,22 +85,22 @@ final class CableRewiringTests: XCTestCase {
     func testRewireRepeatsPreflightAndSendsOneVersionedPatch() async throws {
         let api = try client("success")
         let model = CableRewireModel(client: api, cableID: 7, side: .a)
-        await model.load(); model.destination = endpoint(3)
-        await model.review(); XCTAssertNotNil(model.reviewed)
+        await model.load(); XCTAssertNil(model.errorMessage, model.errorMessage ?? ""); model.destination = endpoint(3)
+        await model.review(); XCTAssertNotNil(model.reviewed, model.errorMessage ?? "")
         await model.confirm(); XCTAssertNotNil(model.moved)
         await model.confirm()
         let patches = LifecycleProtocol.state.requests.filter { $0.httpMethod == "PATCH" }
         XCTAssertEqual(patches.count, 1)
-        XCTAssertEqual(patches.first?.url?.path, "/api/dcim/cables/7/")
+        XCTAssertEqual(patches.first.flatMap { LifecycleProtocol.path($0) }, "/api/dcim/cables/7/")
         XCTAssertEqual(patches.first?.value(forHTTPHeaderField: "If-Match"), "W/\"revision-1\"")
-        XCTAssertEqual(LifecycleProtocol.state.requests.filter { $0.url?.path == "/api/dcim/interfaces/3/" }.count, 2)
+        XCTAssertEqual(LifecycleProtocol.state.requests.filter { LifecycleProtocol.path($0) == "/api/dcim/interfaces/3/" }.count, 2)
         await api.close()
     }
     func testChangedCableOrOccupiedDestinationBlocksMutation() async throws {
         for scenario in ["conflict", "occupied", "renamed"] {
             let api = try client(scenario)
             let model = CableRewireModel(client: api, cableID: 7, side: .a)
-            await model.load(); model.destination = endpoint(3)
+            await model.load(); XCTAssertNil(model.errorMessage, model.errorMessage ?? ""); model.destination = endpoint(3)
             await model.review(); XCTAssertNil(model.reviewed); XCTAssertNotNil(model.errorMessage)
             await model.confirm()
             XCTAssertFalse(LifecycleProtocol.state.requests.contains { $0.httpMethod == "PATCH" })
@@ -110,7 +110,7 @@ final class CableRewiringTests: XCTestCase {
     func testLostRewireReplyCannotBeRetriedInTheSameForm() async throws {
         let api = try client("lost")
         let model = CableRewireModel(client: api, cableID: 7, side: .a)
-        await model.load(); model.destination = endpoint(3); await model.review()
+        await model.load(); XCTAssertNil(model.errorMessage, model.errorMessage ?? ""); model.destination = endpoint(3); await model.review()
         await model.confirm(); XCTAssertNil(model.moved); XCTAssertTrue(model.attempted)
         XCTAssertNotNil(model.errorMessage)
         await model.confirm(); await model.load()
@@ -154,6 +154,9 @@ private final class LifecycleProtocol: URLProtocol, @unchecked Sendable {
         func reset() { lock.lock(); stored = []; lock.unlock() }
     }
     static let state = State()
+    static func path(_ request: URLRequest) -> String? {
+        request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.path }
+    }
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
@@ -165,17 +168,17 @@ private final class LifecycleProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost)); return
         }
         var responseBody: [String: Any]
-        if url.path == "/api/dcim/cables/7/" {
+        if Self.path(request) == "/api/dcim/cables/7/" {
             func end(_ id: Int) -> [String: Any] {
                 ["object_type": "dcim.interface", "object_id": id, "object": ["id": id, "name": "Port \(id)", "device": ["id": 301, "name": "Device"]]]
             }
             responseBody = ["id": 7, "a_terminations": [end(patch ? 3 : 1)], "b_terminations": [end(2)]]
-        } else if url.path == "/api/dcim/devices/301/" {
+        } else if Self.path(request) == "/api/dcim/devices/301/" {
             responseBody = ["id": 301, "name": "Device"]
         } else {
             responseBody = ["id": 3, "name": scenario == "renamed" ? "Changed" : "Port 3", "device": ["id": 301, "name": "Device"], "cable": scenario == "occupied" ? ["id": 9] : NSNull(), "_occupied": scenario == "occupied", "mark_connected": patch, "type": ["value": "1000base-t", "label": "1GE"]]
         }
-        let changed = scenario == "conflict" && Self.state.requests.filter { $0.url?.path == "/api/dcim/cables/7/" }.count > 1
+        let changed = scenario == "conflict" && Self.state.requests.filter { LifecycleProtocol.path($0) == "/api/dcim/cables/7/" }.count > 1
         let headers = ["Content-Type": "application/json", "ETag": changed ? "W/\"revision-2\"" : "W/\"revision-1\""]
         guard let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: headers), let data = try? JSONSerialization.data(withJSONObject: responseBody) else { return }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)

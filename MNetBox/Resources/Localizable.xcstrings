@@ -8907,6 +8907,38 @@
           }
         }
       }
+    },
+    "IP range": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IP range"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plage IP"
+          }
+        }
+      }
+    },
+    "This range is marked populated or utilized in NetBox. These marks do not measure live network activity.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This range is marked populated or utilized in NetBox. These marks do not measure live network activity."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette plage est marquée comme peuplée ou utilisée dans NetBox. Ces marques ne mesurent pas l’activité réelle du réseau."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

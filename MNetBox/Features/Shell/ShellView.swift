@@ -57,6 +57,7 @@ struct ShellView: View {
                             } label: { Label(kind.title, systemImage: kind == .prefixes ? "square.stack.3d.up.fill" : "network") }
                             .accessibilityIdentifier("ipamCategory-\(kind.rawValue)")
                         }
+                        NavigationLink { IPRangeListView(client: client) } label: { Label("IP ranges", systemImage: "arrow.left.and.right") }.accessibilityIdentifier("ipamCategory-ipRanges")
                         ForEach(VLANBrowseKind.allCases, id: \.self) { kind in
                             NavigationLink { VLANListView(service: VLANBrowseService(client: client, kind: kind)) } label: { Label(kind.title, systemImage: kind == .vlans ? "square.stack.3d.up" : "folder") }.accessibilityIdentifier("ipamCategory-\(kind.rawValue)")
                         }

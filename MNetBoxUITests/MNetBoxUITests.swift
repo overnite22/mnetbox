@@ -25,8 +25,8 @@ final class MNetBoxUITests: XCTestCase {
             XCTAssertTrue(app.descendants(matching: .any)["ipamCreated"].firstMatch.waitForExistence(timeout: 5))
             app.buttons["openCreatedIPAM"].tap()
             reveal(app.buttons["ipAssignedInterface"], in: app).tap()
-            XCTAssertTrue(app.staticTexts["interfaceTitle"].waitForExistence(timeout: 5))
-            XCTAssertEqual(app.staticTexts["interfaceTitle"].label, "eth0")
+            // The navigation stack now holds two interface details; check the visible name, not a unique identifier.
+            XCTAssertTrue(app.staticTexts["eth0"].firstMatch.waitForExistence(timeout: 5))
             attach(app, name: virtual ? "Assigned IP on VM interface" : "Assigned IP on physical interface")
             app.terminate()
         }

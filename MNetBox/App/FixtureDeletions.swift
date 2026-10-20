@@ -19,7 +19,9 @@ enum FixtureDeletions {
     static func response(_ request: URLRequest) -> (Int, String)? {
         guard let url = request.url else { return nil }
         if request.httpMethod == "GET", isDeleted(url, id: Int(url.lastPathComponent)) { return (404, "{}") }
-        if request.httpMethod == "GET", ["ip-ranges", "fhrp-groups"].contains(url.lastPathComponent) {
+        // Dependency checks before deletion always ask for limit=1; browsing IP ranges must reach IPRangeFixture.
+        if request.httpMethod == "GET", ["ip-ranges", "fhrp-groups"].contains(url.lastPathComponent),
+           URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.contains(URLQueryItem(name: "limit", value: "1")) == true {
             return (200, "{\"count\":0,\"next\":null,\"previous\":null,\"results\":[]}")
         }
         guard request.httpMethod == "DELETE", Int(url.lastPathComponent) != nil,

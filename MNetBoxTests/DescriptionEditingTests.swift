@@ -180,7 +180,7 @@ import XCTest
                 if field.supports(collection) {
                     let snapshot = try await api.textSnapshot(for: target, field: field)
                     let result = try await api.updateText(snapshot, to: field == .name ? "  réseau-01  " : collection == .vlans ? "reserved" : collection == .cables ? "planned" : "offline")
-                    XCTAssertEqual(result.object.value(for: field), field == .name ? "réseau-01" : collection == .vlans ? "reserved" : "offline")
+                    XCTAssertEqual(result.object.value(for: field), field == .name ? "réseau-01" : collection == .vlans ? "reserved" : collection == .cables ? "planned" : "offline")
                     XCTAssertEqual(result.object.description, "Original")
                     XCTAssertEqual(result.object.comments, "Original comments")
                 } else {

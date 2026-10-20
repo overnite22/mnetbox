@@ -32,6 +32,21 @@ final class MNetBoxUITests: XCTestCase {
         }
     }
 
+    @MainActor func testScanManualCodeFindsAndOpensDevice() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard"]
+        app.launch(); app.tabBars.buttons["Search"].tap()
+        reveal(app.buttons["openScanner"], in: app).tap()
+        // No camera on the simulator: the manual code takes the same lookup path as a scanned label.
+        let field = app.textFields["scanManualCode"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap(); field.typeText("Core")
+        app.buttons["scanLookup"].tap()
+        reveal(app.buttons["scanDevice-301"], in: app).tap()
+        reveal(app.staticTexts["inventoryDetailTitle"], in: app)
+        XCTAssertTrue(app.staticTexts["Core-switch"].firstMatch.exists)
+        attach(app, name: "Device opened from a label code")
+    }
+
     @MainActor func testIPRangeDirectoryPaginationAndFreshDetail() {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard"]

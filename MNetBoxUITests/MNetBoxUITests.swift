@@ -14,6 +14,24 @@ final class MNetBoxUITests: XCTestCase {
         return app
     }
 
+    @MainActor func testCreateIPDirectlyOnPhysicalAndVirtualInterface() {
+        for virtual in [false, true] {
+            let app = openEditableInterface(virtual: virtual)
+            reveal(app.buttons["interfaceCreateIP"], in: app).tap()
+            let field = app.textFields["creationCIDR"]
+            XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap(); field.typeText("203.0.113.90/24")
+            reviewCreation(app)
+            reveal(app.buttons["confirmIPAMCreation"], in: app).tap()
+            XCTAssertTrue(app.descendants(matching: .any)["ipamCreated"].firstMatch.waitForExistence(timeout: 5))
+            app.buttons["openCreatedIPAM"].tap()
+            reveal(app.buttons["ipAssignedInterface"], in: app).tap()
+            XCTAssertTrue(app.staticTexts["interfaceTitle"].waitForExistence(timeout: 5))
+            XCTAssertEqual(app.staticTexts["interfaceTitle"].label, "eth0")
+            attach(app, name: virtual ? "Assigned IP on VM interface" : "Assigned IP on physical interface")
+            app.terminate()
+        }
+    }
+
     @MainActor func testIPRangeDirectoryPaginationAndFreshDetail() {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "--ui-testing-dashboard"]

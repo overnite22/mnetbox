@@ -960,6 +960,13 @@ actor APIClient {
 
     func checkIPAMCreation(_ input: IPAMCreationPlan) async throws {
         let plan = try input.validated()
+        if let assignment = plan.assignment {
+            let service = InterfaceService(client: self, kind: assignment.kind, parentID: assignment.parentID)
+            let interface = try await service.detail(id: assignment.id)
+            guard interface.name == assignment.title else { throw APIError.invalidReference }
+            let parent: EditReference = try await get(assignment.kind.parentKind.path + "\(assignment.parentID ?? 0)/")
+            guard parent.id == assignment.parentID else { throw APIError.invalidReference }
+        }
         let query = [URLQueryItem(name: plan.kind == .prefixes ? "prefix" : "address", value: plan.kind == .prefixes ? plan.cidr.text : plan.cidr.host),
                      URLQueryItem(name: "vrf_id", value: plan.vrf.map { String($0.id) } ?? "null"),
                      URLQueryItem(name: "limit", value: "1")]
@@ -983,7 +990,7 @@ actor APIClient {
         guard plan.matches(object), (plan.tenant == nil ? object.tenant == nil : object.tenant?.id == plan.tenant?.id), reply.status == plan.status,
               object.family?.value == plan.cidr.family, object.description == plan.description,
               object.comments == plan.comments,
-              (plan.kind == .prefixes || (object.dnsName == plan.dnsName && object.assignedObjectID == nil && object.assignedObjectType == nil)) else {
+              (plan.kind == .prefixes || (object.dnsName == plan.dnsName && object.assignedObjectID == plan.assignment?.id && object.assignedObjectType == plan.assignment?.kind.rawValue && (plan.assignment == nil || object.assignedObject?.id == plan.assignment?.id))) else {
             throw APIError.invalidResponse
         }
         return object

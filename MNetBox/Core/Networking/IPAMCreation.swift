@@ -49,8 +49,12 @@ struct IPAMCreationDraft: Sendable {
     var description = ""
     var comments = ""
     var dnsName = ""
+    var assignment: InterfaceSelection?
     func plan() throws -> IPAMCreationPlan {
         guard kind.statuses.contains(status), (vrf?.id ?? 1) > 0, (tenant?.id ?? 1) > 0 else { throw APIError.invalidResponse }
+        if let assignment {
+            guard kind == .ipAddresses, assignment.id > 0, (assignment.parentID ?? 0) > 0, !assignment.title.isEmpty else { throw APIError.invalidReference }
+        }
         let parsed = try IPAMCIDR(cidr, network: kind == .prefixes)
         guard parsed.mask > 0 else { throw APIError.invalidCIDR }
         let description = EditableTextField.description.normalized(description)
@@ -61,7 +65,7 @@ struct IPAMCreationDraft: Sendable {
         if kind == .ipAddresses { try EditableTextField.dnsName.validate(dns) }
         else if !dns.isEmpty { throw APIError.invalidResponse }
         return IPAMCreationPlan(kind: kind, cidr: parsed, status: status, vrf: vrf, tenant: tenant,
-                                description: description, comments: comments, dnsName: dns)
+                                description: description, comments: comments, dnsName: dns, assignment: assignment)
     }
 }
 
@@ -74,7 +78,8 @@ struct IPAMCreationPlan: Encodable, Sendable {
     let description: String
     let comments: String
     let dnsName: String
-    enum CodingKeys: String, CodingKey { case prefix, address, status, vrf, tenant, description, comments; case dnsName = "dns_name" }
+    var assignment: InterfaceSelection? = nil
+    enum CodingKeys: String, CodingKey { case prefix, address, status, vrf, tenant, description, comments; case dnsName = "dns_name", assignedType = "assigned_object_type", assignedID = "assigned_object_id" }
     func encode(to encoder: Encoder) throws {
         var fields = encoder.container(keyedBy: CodingKeys.self)
         try fields.encode(cidr.text, forKey: kind == .prefixes ? .prefix : .address)
@@ -84,11 +89,15 @@ struct IPAMCreationPlan: Encodable, Sendable {
         try fields.encode(description, forKey: .description)
         try fields.encode(comments, forKey: .comments)
         if kind == .ipAddresses { try fields.encode(dnsName, forKey: .dnsName) }
+        if let assignment {
+            try fields.encode(assignment.kind.rawValue, forKey: .assignedType)
+            try fields.encode(assignment.id, forKey: .assignedID)
+        }
     }
     // Validate again at the transport boundary, even if a plan was constructed outside the form.
     func validated() throws -> IPAMCreationPlan {
         try IPAMCreationDraft(kind: kind, cidr: cidr.text, status: status, vrf: vrf, tenant: tenant,
-                              description: description, comments: comments, dnsName: dnsName).plan()
+                              description: description, comments: comments, dnsName: dnsName, assignment: assignment).plan()
     }
     func matches(_ object: IPAMObject, exactMask: Bool = true) -> Bool {
         guard object.id > 0, (vrf == nil ? object.vrf == nil : object.vrf?.id == vrf?.id),

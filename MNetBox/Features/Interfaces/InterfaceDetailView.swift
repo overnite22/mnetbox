@@ -9,6 +9,7 @@ struct InterfaceDetailView: View {
     @State private var model: ReadDetailModel<InterfaceObject>
     @State private var refreshID = UUID()
     @State private var editingVLAN = false
+    @State private var creatingIP = false
     @State private var editingField: StructuredEditField?
     init(service: InterfaceService, id: Int, onDeleted: (() -> Void)? = nil) {
         self.service = service
@@ -48,6 +49,7 @@ struct InterfaceDetailView: View {
                             context: .interface(kind: service.kind, id: object.id, title: object.name)))
                     } label: { Label("Assigned IP addresses", systemImage: "number") }
                     .accessibilityIdentifier("interfaceIPs")
+                    Button("Create assigned IP address", systemImage: "plus.circle") { creatingIP = true }.disabled(!canEdit).accessibilityIdentifier("interfaceCreateIP")
                     if let cableID = object.cable?.id, cableID > 0 {
                         NavigationLink {
                             CableDetailView(client: service.client, id: cableID) { refreshID = UUID() }
@@ -91,6 +93,11 @@ struct InterfaceDetailView: View {
         }
         .disabled(model.isLoading)
         .navigationTitle("Interface").navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $creatingIP, onDismiss: { refreshID = UUID() }) {
+            if let object = model.object, let parentID = service.parent(object)?.id {
+                IPAMCreateView(client: service.client, kind: .ipAddresses, assignment: InterfaceSelection(kind: service.kind, id: object.id, title: object.name, parentID: parentID))
+            }
+        }
         .sheet(item: $editingField, onDismiss: { refreshID = UUID() }) { field in
             if let object = model.object, let parentID = service.parent(object)?.id, parentID > 0 {
                 StructuredEditView(client: service.client,

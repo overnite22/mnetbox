@@ -8939,6 +8939,38 @@
           }
         }
       }
+    },
+    "Create assigned IP address": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create assigned IP address"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer une adresse IP assignée"
+          }
+        }
+      }
+    },
+    "This creates one IP address assigned to the reviewed interface. No primary IP or device configuration is changed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This creates one IP address assigned to the reviewed interface. No primary IP or device configuration is changed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette action crée une adresse IP assignée à l’interface relue. Aucune IP principale ni configuration de l’équipement n’est modifiée."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

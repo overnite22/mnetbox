@@ -60,6 +60,11 @@ final class FixtureIPAMCreations: @unchecked Sendable {
         if kind == .ipAddresses {
             record["dns_name"] = payload["dns_name"] ?? ""
             for key in ["assigned_object", "assigned_object_type", "assigned_object_id", "nat_inside"] { record[key] = NSNull() }
+            if let type = payload["assigned_object_type"] as? String, let kind = InterfaceKind(rawValue: type), let id = payload["assigned_object_id"] as? Int,
+               let url = URL(string: "https://example.test/api/" + kind.path + "\(id)/"), let reply = ComponentFixture.response(url), reply.0 == 200,
+               let object = try? JSONSerialization.jsonObject(with: Data(reply.1.utf8)) as? [String: Any] {
+                record["assigned_object_type"] = type; record["assigned_object_id"] = id; record["assigned_object"] = object
+            }
             record["nat_outside"] = []
         } else { record["children"] = 0 }
         return record

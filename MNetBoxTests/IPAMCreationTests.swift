@@ -24,6 +24,42 @@ import XCTest
         draft.tenant = nil; draft.description = String(repeating: "a", count: 201); XCTAssertThrowsError(try draft.plan())
         draft.description = ""; draft.dnsName = "host.test"; XCTAssertThrowsError(try draft.plan())
     }
+    func testAssignedCreationUsesTypedPairAndRejectsPrefixOrMissingParent() throws {
+        let selection = InterfaceSelection(kind: .physical, id: 501, title: "eth0", parentID: 301)
+        let plan = try IPAMCreationDraft(kind: .ipAddresses, cidr: "203.0.113.90/24", assignment: selection).plan()
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(plan)) as? [String: Any])
+        XCTAssertEqual(body["assigned_object_type"] as? String, "dcim.interface")
+        XCTAssertEqual(body["assigned_object_id"] as? Int, 501)
+        XCTAssertThrowsError(try IPAMCreationDraft(kind: .prefixes, cidr: "203.0.113.0/24", assignment: selection).plan())
+        XCTAssertThrowsError(try IPAMCreationDraft(kind: .ipAddresses, cidr: "203.0.113.90/24", assignment: InterfaceSelection(kind: .virtual, id: 801, title: "eth0")).plan())
+    }
+    func testPhysicalAndVirtualAssignedCreationAndUncertainReply() async throws {
+        for scenario in ["assignnew", "assignnewlost", "assignnewwrong"] {
+            for kind in [InterfaceKind.physical, .virtual] {
+                let api = try client(scenario)
+                let selection = InterfaceSelection(kind: kind, id: kind == .physical ? 501 : 801, title: "eth0", parentID: kind == .physical ? 301 : 401)
+                let model = IPAMCreateModel(client: api, kind: .ipAddresses, assignment: selection)
+                model.draft.cidr = "203.0.113.90/24"
+                await model.review(); XCTAssertNotNil(model.reviewed, model.errorMessage ?? "")
+                await model.create(); await model.create()
+                XCTAssertEqual(CreationProtocol.posts(scenario), 1)
+                if scenario == "assignnew" {
+                    XCTAssertEqual(model.created?.assignedObjectID, selection.id)
+                    XCTAssertEqual(model.created?.assignedObjectType, kind.rawValue)
+                } else { XCTAssertNil(model.created); XCTAssertNotNil(model.errorMessage) }
+                await api.close()
+            }
+        }
+    }
+    func testAssignmentCannotMoveToAnotherParentBeforeCreation() async throws {
+        let api = try client("assignnew")
+        let selection = InterfaceSelection(kind: .physical, id: 501, title: "eth0", parentID: 999)
+        let model = IPAMCreateModel(client: api, kind: .ipAddresses, assignment: selection)
+        model.draft.cidr = "203.0.113.90/24"
+        await model.review(); XCTAssertNil(model.reviewed); XCTAssertNotNil(model.errorMessage)
+        XCTAssertEqual(CreationProtocol.posts("assignnew"), 0)
+        await api.close()
+    }
     func testExactTypedPayloadWithExplicitGlobalAndNoTenant() throws {
         for kind in [IPAMKind.prefixes, .ipAddresses] {
             let plan = try IPAMCreationDraft(kind: kind, cidr: kind == .prefixes ? "203.0.113.0/24" : "203.0.113.10/24").plan()
@@ -119,6 +155,11 @@ private final class CreationProtocol: URLProtocol, @unchecked Sendable {
     override func startLoading() {
         guard let url = request.url, let parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
         let scenario = url.host?.components(separatedBy: ".").first ?? "success"
+        if scenario.hasPrefix("assign"), let reply = ComponentFixture.response(url) ?? InventoryFixture.response(url), !parts.path.contains("/ipam/") {
+            guard let response = HTTPURLResponse(url: url, statusCode: reply.0, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]) else { return }
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: Data(reply.1.utf8)); client?.urlProtocolDidFinishLoading(self); return
+        }
         let prefix = parts.path == "/api/ipam/prefixes/"
         guard prefix || parts.path == "/api/ipam/ip-addresses/" else { client?.urlProtocol(self, didFailWithError: URLError(.badURL)); return }
         var status = 200
@@ -128,10 +169,10 @@ private final class CreationProtocol: URLProtocol, @unchecked Sendable {
             guard request.value(forHTTPHeaderField: "If-Match") == nil,
                   request.value(forHTTPHeaderField: "Content-Type") == "application/json", let data = requestBody(request),
                   let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  Set(payload.keys) == Set(prefix ? ["prefix", "status", "vrf", "tenant", "description", "comments"] : ["address", "status", "vrf", "tenant", "description", "comments", "dns_name"]) else {
+                  Set(payload.keys).subtracting(scenario.hasPrefix("assignnew") ? ["assigned_object_type", "assigned_object_id"] : []) == Set(prefix ? ["prefix", "status", "vrf", "tenant", "description", "comments"] : ["address", "status", "vrf", "tenant", "description", "comments", "dns_name"]) else {
                 client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse)); return
             }
-            if scenario == "lost" { client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost)); return }
+            if scenario == "lost" || scenario == "assignnewlost" { client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost)); return }
             status = scenario == "forbidden" ? 403 : scenario == "invalid" ? 400 : scenario == "conflict" ? 409 : 201
             body = payload; body["id"] = scenario == "wrongid" ? 0 : 123
             let primary = payload[prefix ? "prefix" : "address"] as? String ?? ""
@@ -140,6 +181,9 @@ private final class CreationProtocol: URLProtocol, @unchecked Sendable {
             for key in ["vrf", "tenant"] { body[key] = (payload[key] as? Int).map { ["id": $0] as Any } ?? NSNull() }
             if scenario == "wrongvrf" { body["vrf"] = ["id": 7] }
             if scenario == "wrongaddress" { body["address"] = "203.0.113.11/24" }
+            if scenario.hasPrefix("assignnew"), let id = payload["assigned_object_id"] as? Int {
+                body["assigned_object"] = ["id": scenario == "assignnewwrong" ? id + 1 : id, "name": "eth0"]
+            }
             if scenario == "assigned" { body["assigned_object_id"] = 501; body["assigned_object_type"] = "dcim.interface" }
             if scenario == "invalid" { body = ["custom_fields": ["sensitive-placeholder"]] }
         } else {

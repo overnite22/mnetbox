@@ -9,9 +9,9 @@ import SwiftUI
     private(set) var attempted = false
     private(set) var errorMessage: String?
     let client: APIClient
-    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil) {
+    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil, assignment: InterfaceSelection? = nil) {
         self.client = client
-        draft = IPAMCreationDraft(kind: kind, vrf: vrf?.id == 0 ? nil : vrf, tenant: tenant)
+        draft = IPAMCreationDraft(kind: kind, vrf: vrf?.id == 0 ? nil : vrf, tenant: tenant, assignment: assignment)
     }
     var isWorking: Bool { isChecking || isSaving }
     var canReview: Bool { !isWorking && !attempted && (try? draft.plan()) != nil }
@@ -53,8 +53,8 @@ struct IPAMCreateView: View {
     @FocusState private var focused: Field?
     private enum Operation: Equatable { case idle, review(UUID), create(UUID) }
     @State private var operation = Operation.idle
-    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil) {
-        _model = State(initialValue: IPAMCreateModel(client: client, kind: kind, vrf: vrf, tenant: tenant))
+    init(client: APIClient, kind: IPAMKind, vrf: ReferenceSelection? = nil, tenant: ReferenceSelection? = nil, assignment: InterfaceSelection? = nil) {
+        _model = State(initialValue: IPAMCreateModel(client: client, kind: kind, vrf: vrf, tenant: tenant, assignment: assignment))
     }
     private var title: String { L10n.text(model.draft.kind == .prefixes ? "New prefix" : "New IP address") }
     private var verificationQuery: IPAMQuery {
@@ -69,6 +69,10 @@ struct IPAMCreateView: View {
                 Section("Target") {
                     Text(model.client.serverDisplay).font(.caption).textSelection(.enabled)
                     Text(model.draft.kind.title)
+                    if let assignment = model.draft.assignment {
+                        Text(assignment.kind.parentKind.title + " · " + assignment.title)
+                        Text(verbatim: "#\(assignment.id) · " + L10n.identifier("Parent #%ld", assignment.parentID ?? 0))
+                    }
                 }
                 if let error = model.errorMessage { Section { StatusMessage(message: error) } }
                 if let object = model.created {
@@ -91,7 +95,11 @@ struct IPAMCreateView: View {
                         DetailField(title: "Description", value: plan.description.isEmpty ? L10n.text("Empty") : plan.description)
                         if !plan.comments.isEmpty { Text(plan.comments) }
                         if plan.kind == .ipAddresses { DetailField(title: "DNS name", value: plan.dnsName.isEmpty ? L10n.text("Empty") : plan.dnsName) }
-                        Text("This creates one object in NetBox. No interface assignment or DNS server change is made.")
+                        if let assignment = plan.assignment {
+                            DetailField(title: "Interface", value: assignment.title + " (#\(assignment.id))")
+                            Text(L10n.identifier("Parent #%ld", assignment.parentID ?? 0))
+                            Text("This creates one IP address assigned to the reviewed interface. No primary IP or device configuration is changed.")
+                        } else { Text("This creates one object in NetBox. No interface assignment or DNS server change is made.") }
                         Text("The duplicate check covers visible objects only. NetBox permissions and uniqueness rules still apply.").font(.caption)
                         if !model.attempted {
                             Button("Confirm creation") { operation = .create(UUID()) }

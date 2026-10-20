@@ -26,14 +26,14 @@ final class IPAMAvailabilityTests: XCTestCase {
         XCTAssertThrowsError(try IPAMAvailability.firstIP(outside, parent: parent, vrfID: nil))
     }
     func testFirstPrefixPicksFirstBlockLargeEnough() throws {
-        let parent = try cidr("10.20.0.0/16")
-        let blocks = [IPAMAvailability.AvailablePrefix(prefix: "10.20.1.0/24", vrf: nil), .init(prefix: "10.20.4.0/22", vrf: nil)]
-        XCTAssertEqual(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 26)?.text, "10.20.1.0/26")
-        XCTAssertEqual(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 23)?.text, "10.20.4.0/23")
+        let parent = try cidr("198.18.0.0/16")
+        let blocks = [IPAMAvailability.AvailablePrefix(prefix: "198.18.1.0/24", vrf: nil), .init(prefix: "198.18.4.0/22", vrf: nil)]
+        XCTAssertEqual(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 26)?.text, "198.18.1.0/26")
+        XCTAssertEqual(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 23)?.text, "198.18.4.0/23")
         XCTAssertNil(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 21))
         XCTAssertThrowsError(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 16))
         XCTAssertThrowsError(try IPAMAvailability.firstPrefix(blocks, parent: parent, vrfID: nil, length: 33))
-        XCTAssertThrowsError(try IPAMAvailability.firstPrefix([.init(prefix: "10.21.0.0/24", vrf: nil)], parent: parent, vrfID: nil, length: 24))
+        XCTAssertThrowsError(try IPAMAvailability.firstPrefix([.init(prefix: "198.19.0.0/24", vrf: nil)], parent: parent, vrfID: nil, length: 24))
     }
     func testIPv6PrefixSuggestion() throws {
         let parent = try cidr("2001:db8::/48")

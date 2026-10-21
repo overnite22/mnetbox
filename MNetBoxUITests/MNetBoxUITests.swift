@@ -614,7 +614,8 @@ final class MNetBoxUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["cableTitle"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["cableTitle"].label, "Uplink-A")
         attach(app, name: "Cable multiple terminations")
-        app.buttons["cableTermination-0-501"].tap()
+        // Editable cable fields now precede the Side A/B sections.
+        reveal(app.buttons["cableTermination-0-501"], in: app).tap()
         XCTAssertTrue(app.buttons["interfaceIPs"].waitForExistence(timeout: 5))
         app.buttons["interfaceIPs"].tap()
         XCTAssertTrue(app.buttons["ipamObject-11"].waitForExistence(timeout: 5))
@@ -1728,7 +1729,7 @@ final class MNetBoxUITests: XCTestCase {
         let message = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "The group contains incompatible VLANs.")).firstMatch
         XCTAssertTrue(message.waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["vlanAdminConfirm"].exists); app.buttons["Cancel"].tap()
         administrationButton(app, "groupScope").tap(); app.buttons["vlanAdminScope"].tap(); app.buttons["Global"].tap(); administrationButton(app, "vlanAdminReview").tap()
-        XCTAssertTrue(message.waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["vlanAdminConfirm"].exists)
+        reveal(message, in: app); XCTAssertFalse(app.buttons["vlanAdminConfirm"].exists)
     }
     @MainActor func testVLANGroupCreationAndDirectEditing() {
         let app = networkApp()
